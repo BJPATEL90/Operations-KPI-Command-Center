@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style>
+      :root {
+        --ink: #14211c;
+        --muted: #68736e;
+        --paper: #f4f1e9;
+        --card: #fffdf8;
+        --line: #dcd8ce;
+        --green: #1e5c45;
+        --lime: #dfff7a;
+        --coral: #d95c43;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 80% 0%, rgba(223, 255, 122, .2), transparent 28rem),
+          var(--paper);
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      button, a { font: inherit; }
+      button { cursor: pointer; }
+      a { color: inherit; }
+      .shell { width: min(1220px, calc(100% - 48px)); margin: 0 auto; }
+      .masthead {
+        min-height: 94px; display: flex; align-items: center;
+        justify-content: space-between; border-bottom: 1px solid var(--line);
+      }
+      .brand { display: flex; align-items: center; gap: 14px; }
+      .mark {
+        width: 44px; height: 44px; display: grid; place-items: center;
+        border-radius: 50%; background: var(--green); color: white;
+        font: 700 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: .08em;
+      }
+      .eyebrow, .brand-name, .kicker, .category, .metric p, .metric span,
+      .source, .footer p { margin: 0; }
+      .eyebrow, .kicker, .category {
+        color: var(--green);
+        font: 700 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: .12em; text-transform: uppercase;
+      }
+      .brand-name { margin-top: 3px; font-size: 15px; font-weight: 700; }
+      .toolbar { display: flex; align-items: center; gap: 14px; }
+      .updated {
+        display: flex; align-items: center; gap: 8px; color: var(--muted);
+        font: 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #4b9a70;
+        box-shadow: 0 0 0 4px rgba(75,154,112,.13); }
+      .refresh {
+        min-height: 38px; padding: 0 14px; border: 1px solid var(--line);
+        border-radius: 9px; background: rgba(255,255,255,.55); color: var(--green);
+        font-size: 12px; font-weight: 700;
+      }
+      .refresh:hover { border-color: var(--green); background: white; }
+      .refresh:disabled { cursor: wait; opacity: .6; }
+      .hero {
+        display: grid; grid-template-columns: 1fr auto; align-items: end;
+        gap: 48px; padding: 76px 0 62px;
+      }
+      h1 {
+        max-width: 840px; margin: 14px 0 20px;
+        font-size: clamp(42px, 7vw, 88px); font-weight: 650;
+        letter-spacing: -.065em; line-height: .94;
+      }
+      .hero-copy {
+        max-width: 700px; margin: 0; color: var(--muted);
+        font-size: clamp(17px, 2vw, 21px); line-height: 1.5;
+      }
+      .summary {
+        width: 146px; height: 146px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; border-radius: 50%;
+        background: var(--lime); transform: rotate(3deg);
+      }
+      .summary strong { font-size: 54px; letter-spacing: -.06em; line-height: .9; }
+      .summary span {
+        margin-top: 10px;
+        font: 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: .08em; text-transform: uppercase;
+      }
+      .notice {
+        display: none; margin: 0 0 24px; padding: 15px 18px;
+        border: 1px solid #e6c0b7; border-radius: 10px;
+        background: #fff7f4; color: #8a3324; font-size: 13px; line-height: 1.5;
+      }
+      .notice.show { display: block; }
+      .nav {
+        display: flex; align-items: center; gap: 10px; padding: 16px 0;
+        border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+        overflow-x: auto;
+      }
+      .nav-label {
+        margin-right: 4px; color: var(--muted);
+        font: 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: .1em; text-transform: uppercase;
+      }
+      .nav a {
+        flex: none; padding: 9px 14px; border: 1px solid var(--line);
+        border-radius: 999px; background: rgba(255,255,255,.45);
+        font-size: 13px; font-weight: 700; text-decoration: none;
+      }
+      .nav a:hover { border-color: var(--green); background: white; }
+      .reports { display: grid; gap: 24px; padding: 32px 0 56px; }
+      .report {
+        scroll-margin-top: 24px; display: grid; grid-template-columns: 76px 1fr;
+        overflow: hidden; border: 1px solid var(--line); border-radius: 22px;
+        background: var(--card); box-shadow: 0 12px 34px rgba(42,52,46,.06);
+      }
+      .index {
+        padding-top: 28px; border-right: 1px solid var(--line); color: var(--muted);
+        font: 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        text-align: center;
+      }
+      .report-content { min-width: 0; }
+      .report-head {
+        display: flex; align-items: flex-start; justify-content: space-between;
+        gap: 24px; padding: 28px 30px 25px;
+      }
+      h2 {
+        margin: 8px 0 0; font-size: clamp(28px, 4vw, 42px);
+        font-weight: 650; letter-spacing: -.045em;
+      }
+      .meta {
+        display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+        color: var(--muted);
+        font: 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      .fresh {
+        padding: 6px 9px; border-radius: 999px; background: #e6f2eb;
+        color: var(--green); font-weight: 700;
+      }
+      .fresh.missing { background: #fff0ec; color: var(--coral); }
+      .metric-grid {
+        display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+        border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      }
+      .metric {
+        min-height: 156px; display: flex; flex-direction: column;
+        justify-content: space-between; padding: 24px;
+      }
+      .metric + .metric { border-left: 1px solid var(--line); }
+      .metric p {
+        min-height: 34px; color: var(--muted); font-size: 13px;
+        font-weight: 700; line-height: 1.25;
+      }
+      .metric strong {
+        margin: 13px 0 12px; font-size: clamp(34px, 4vw, 49px);
+        font-weight: 680; letter-spacing: -.05em;
+      }
+      .metric strong.positive { color: var(--green); }
+      .metric strong.warning { color: var(--coral); }
+      .metric span {
+        min-height: 30px; color: #8a938f;
+        font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      .report-foot {
+        min-height: 82px; display: flex; align-items: center;
+        justify-content: space-between; gap: 20px; padding: 16px 30px;
+      }
+      .source {
+        max-width: 390px; overflow: hidden; color: var(--muted);
+        font: 11px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+        text-overflow: ellipsis; white-space: nowrap;
+      }
+      .actions { display: flex; gap: 10px; }
+      .button {
+        min-height: 44px; display: inline-flex; align-items: center;
+        justify-content: center; gap: 12px; padding: 0 17px;
+        border: 1px solid var(--green); border-radius: 9px;
+        font-size: 13px; font-weight: 700; text-decoration: none;
+        transition: transform 150ms ease, box-shadow 150ms ease;
+      }
+      .button:hover { transform: translateY(-2px); box-shadow: 0 7px 18px rgba(30,92,69,.15); }
+      .primary { background: var(--green); color: white; }
+      .secondary { background: transparent; color: var(--green); }
+      .disabled { pointer-events: none; border-color: var(--line); color: #8a938f; background: #eeeae1; }
+      .loader {
+        min-height: 330px; display: grid; place-items: center; color: var(--muted);
+        border: 1px solid var(--line); border-radius: 22px; background: var(--card);
+      }
+      .loader span { animation: pulse 1.2s ease-in-out infinite; }
+      @keyframes pulse { 50% { opacity: .35; } }
+      .footer {
+        min-height: 104px; display: flex; align-items: center;
+        justify-content: space-between; border-top: 1px solid var(--line);
+        color: var(--muted); font-size: 13px;
+      }
+      .footer a { color: var(--green); font-weight: 700; text-decoration: none; }
+      :focus-visible { outline: 3px solid rgba(30,92,69,.35); outline-offset: 3px; }
+
+      @media (max-width: 900px) {
+        .summary { width: 112px; height: 112px; }
+        .summary strong { font-size: 42px; }
+        .metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        .metric:nth-child(3) { border-left: 0; }
+        .metric:nth-child(n+3) { border-top: 1px solid var(--line); }
+      }
+      @media (max-width: 650px) {
+        .shell { width: min(100% - 28px, 1220px); }
+        .masthead { min-height: 82px; }
+        .mark { width: 38px; height: 38px; }
+        .eyebrow, .updated { display: none; }
+        .hero { grid-template-columns: 1fr; gap: 28px; padding: 52px 0 42px; }
+        .summary {
+          width: auto; height: auto; flex-direction: row; justify-content: flex-start;
+          gap: 8px; padding: 14px 18px; border-radius: 12px; transform: none;
+        }
+        .summary strong { font-size: 22px; }
+        .summary span { margin: 0; }
+        .report { grid-template-columns: 1fr; }
+        .index { display: none; }
+        .report-head, .report-foot { align-items: flex-start; flex-direction: column; }
+        .meta { align-items: flex-start; }
+        .metric-grid { grid-template-columns: 1fr; }
+        .metric { min-height: 136px; }
+        .metric + .metric { border-top: 1px solid var(--line); border-left: 0; }
+        .actions { width: 100%; flex-direction: column; }
+        .button { width: 100%; }
+        .footer { align-items: flex-start; flex-direction: column; justify-content: center; gap: 10px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .button { transition: none; }
+        .loader span { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div class="brand">
+          <div class="mark" aria-hidden="true">MW</div>
+          <div>
+            <p class="eyebrow">Mosaic Wellness</p>
+            <p class="brand-name">Operations Intelligence</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="updated">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="updated-at">Loading latest reports…</span>
+          </div>
+          <button class="refresh" id="refresh-button" type="button">Refresh data</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="kicker">Google Workspace · Unified KPI workspace</p>
+          <h1 id="page-title">Operations KPI Command Center</h1>
+          <p class="hero-copy">
+            One secure view of the latest operational health reports, with direct
+            access to every source dashboard and available Gmail message.
+          </p>
+        </div>
+        <div class="summary" aria-label="Dashboard summary">
+          <strong id="report-count">—</strong>
+          <span>reports linked</span>
+        </div>
+      </section>
+
+      <div class="notice" id="notice" role="alert"></div>
+      <nav class="nav" id="report-nav" aria-label="Jump to report"></nav>
+      <section class="reports" id="reports" aria-live="polite">
+        <div class="loader"><span>Reading the latest KPI emails…</span></div>
+      </section>
+
+      <footer class="footer">
+        <p>Restricted to approved Mosaic Wellness Google accounts.</p>
+        <a href="#page-title">Back to top ↑</a>
+      </footer>
+    </main>
+
+    <script>
+      const reportsEl = document.getElementById('reports');
+      const navEl = document.getElementById('report-nav');
+      const noticeEl = document.getElementById('notice');
+      const refreshButton = document.getElementById('refresh-button');
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function safeUrl(value) {
+        try {
+          const url = new URL(value);
+          return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function render(data) {
+        const reports = Array.isArray(data?.reports) ? data.reports : [];
+        document.getElementById('report-count').textContent = reports.length;
+        document.getElementById('updated-at').textContent =
+          `Updated ${formatDateTime(data.updatedAt)}`;
+
+        navEl.innerHTML = [
+          '<span class="nav-label">Reports</span>',
+          ...reports.map((report) =>
+            `<a href="#${escapeHtml(report.id)}">${escapeHtml(report.title)}</a>`
+          ),
+        ].join('');
+
+        reportsEl.innerHTML = reports.map((report, index) => {
+          const dashboardUrl = safeUrl(report.dashboardUrl);
+          const emailUrl = safeUrl(report.emailUrl);
+          const statusClass = report.status === 'ready' ? '' : ' missing';
+
+          return `
+            <article class="report" id="${escapeHtml(report.id)}">
+              <div class="index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</div>
+              <div class="report-content">
+                <header class="report-head">
+                  <div>
+                    <p class="category">${escapeHtml(report.category)}</p>
+                    <h2>${escapeHtml(report.title)}</h2>
+                  </div>
+                  <div class="meta">
+                    <span class="fresh${statusClass}">${escapeHtml(report.statusLabel)}</span>
+                    <span>Reporting date · ${escapeHtml(report.reportingDate)}</span>
+                  </div>
+                </header>
+                <div class="metric-grid">
+                  ${(report.metrics || []).map((metric) => `
+                    <div class="metric">
+                      <p>${escapeHtml(metric.label)}</p>
+                      <strong class="${escapeHtml(metric.tone)}">${escapeHtml(metric.value)}</strong>
+                      <span>${escapeHtml(metric.note)}</span>
+                    </div>
+                  `).join('')}
+                </div>
+                <footer class="report-foot">
+                  <p class="source" title="${escapeHtml(report.subject)}">
+                    Source · ${escapeHtml(report.sender)} · ${escapeHtml(report.subject)}
+                  </p>
+                  <div class="actions">
+                    ${linkButton(dashboardUrl, 'Open dashboard', 'primary')}
+                    ${linkButton(emailUrl, 'Open email', 'secondary')}
+                  </div>
+                </footer>
+              </div>
+            </article>
+          `;
+        }).join('');
+      }
+
+      function linkButton(url, label, kind) {
+        if (!url) {
+          return `<span class="button disabled">${escapeHtml(label)} unavailable</span>`;
+        }
+        return `<a class="button ${kind}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)} <span aria-hidden="true">↗</span></a>`;
+      }
+
+      function formatDateTime(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'just now';
+        return new Intl.DateTimeFormat('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: 'Asia/Kolkata',
+        }).format(date);
+      }
+
+      function showError(error) {
+        const message = error?.message || String(error || 'Unable to load KPI data.');
+        noticeEl.textContent = message;
+        noticeEl.classList.add('show');
+        reportsEl.innerHTML =
+          '<div class="loader"><span>Unable to load reports. Use Refresh data to try again.</span></div>';
+      }
+
+      function loadDashboard(forceRefresh = false) {
+        refreshButton.disabled = true;
+        refreshButton.textContent = forceRefresh ? 'Refreshing…' : 'Loading…';
+        noticeEl.classList.remove('show');
+
+        const runner = google.script.run
+          .withSuccessHandler((data) => {
+            render(data);
+            refreshButton.disabled = false;
+            refreshButton.textContent = 'Refresh data';
+          })
+          .withFailureHandler((error) => {
+            showError(error);
+            refreshButton.disabled = false;
+            refreshButton.textContent = 'Refresh data';
+          });
+
+        if (forceRefresh) runner.refreshDashboardData();
+        else runner.getDashboardData();
+      }
+
+      refreshButton.addEventListener('click', () => loadDashboard(true));
+      loadDashboard(false);
+    </script>
+  </body>
+</html>
