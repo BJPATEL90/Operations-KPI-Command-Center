@@ -398,31 +398,41 @@
         if (!availableIds.includes(activeReportId)) {
           activeReportId = availableIds.includes(requestedId)
             ? requestedId
-            : availableIds[0] || '';
+            : '';
         }
         selectReport(activeReportId, false);
 
         navEl.querySelectorAll('[data-report-id]').forEach((button) => {
           button.addEventListener('click', () => {
-            selectReport(button.dataset.reportId, true);
+            const selectedId =
+              activeReportId === button.dataset.reportId
+                ? ''
+                : button.dataset.reportId;
+            selectReport(selectedId, true);
           });
         });
       }
 
       function selectReport(reportId, updateHash) {
-        if (!reportId) return;
-        activeReportId = reportId;
+        activeReportId = reportId || '';
         navEl.querySelectorAll('[data-report-id]').forEach((button) => {
-          const isActive = button.dataset.reportId === reportId;
+          const isActive =
+            Boolean(activeReportId) &&
+            button.dataset.reportId === activeReportId;
           button.classList.toggle('active', isActive);
           button.setAttribute('aria-selected', String(isActive));
-          button.tabIndex = isActive ? 0 : -1;
+          button.tabIndex = 0;
         });
         reportsEl.querySelectorAll('[data-report-panel]').forEach((panel) => {
-          panel.hidden = panel.dataset.reportPanel !== reportId;
+          panel.hidden =
+            Boolean(activeReportId) &&
+            panel.dataset.reportPanel !== activeReportId;
         });
         if (updateHash) {
-          history.replaceState(null, '', `#${encodeURIComponent(reportId)}`);
+          const nextUrl = activeReportId
+            ? `#${encodeURIComponent(activeReportId)}`
+            : `${location.pathname}${location.search}`;
+          history.replaceState(null, '', nextUrl);
         }
       }
 
