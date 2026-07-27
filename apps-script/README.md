@@ -3,6 +3,12 @@
 Google Apps Script web app for consolidating the latest KPI emails into one
 restricted Mosaic Wellness dashboard.
 
+All report matching, KPI extraction labels, access users, scheduled recipients,
+and schedule settings are maintained in the
+[Operations KPI Configuration](https://docs.google.com/spreadsheets/d/1irCr4_VwE9kG3hSSER_LjkieP0UMgTx7HBbdsB3kB0U/edit)
+Google Sheet. The script contains only the configuration spreadsheet ID and
+application infrastructure.
+
 ## Approved viewers
 
 - bhavesh.patel@mosaicwellness.in

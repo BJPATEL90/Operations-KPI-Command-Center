@@ -1,46 +1,141 @@
 const DASHBOARD_CONFIG = Object.freeze({
-  timeZone: 'Asia/Kolkata',
+  configSpreadsheetId: '1irCr4_VwE9kG3hSSER_LjkieP0UMgTx7HBbdsB3kB0U',
   cacheKey: 'MOSAIC_KPI_DASHBOARD_V1',
-  cacheSeconds: 1800,
-  staleAfterMinutes: 30,
   ownerEmail: 'bhavesh.patel@mosaicwellness.in',
-  dashboardUrl:
-    'https://script.google.com/macros/s/AKfycby5ih5rzT02m8e254Ulu553JUZV5nm1lx3O1o4-clLAh79fsQIcE7-zGwUra7NgVl_eTA/exec',
-  scheduledEmailHour: 11,
-  scheduledEmailRecipients: ['bhavesh.patel@mosaicwellness.in'],
-  allowedEmails: [
-    'bhavesh.patel@mosaicwellness.in',
-    'shailendra.singh@mosaicwellness.in',
-    'shailendra@mosaicwellness.in',
-  ],
-  reports: [
-    {
-      id: 'inventory-cycle-count',
-      title: 'Inventory Cycle Count',
-      category: 'Inventory control',
-      sender: 'bhavesh.patel@mosaicwellness.in',
-      query:
-        'from:bhavesh.patel@mosaicwellness.in subject:"Daily Cycle count inventory" -in:trash',
-      subjectContains: 'Daily Cycle count inventory',
-      parser: 'inventory',
-    },
-    {
-      id: 'fefo-violations',
-      title: 'FEFO Violations',
-      category: 'Dispatch compliance',
-      sender: 'farhana.teli@mosaicwellness.in',
-      query:
-        'from:farhana.teli@mosaicwellness.in subject:"Daily FEFO Violation Check" -in:trash',
-      subjectContains: 'Daily FEFO Violation Check',
-      parser: 'fefo',
-    },
-  ],
+  fallbackTimeZone: 'Asia/Kolkata',
+  fallbackCacheMinutes: 30,
 });
+
+function readRuntimeConfiguration_() {
+  const spreadsheet = SpreadsheetApp.openById(
+    DASHBOARD_CONFIG.configSpreadsheetId,
+  );
+  const settingsRows = readSheetObjects_(spreadsheet, 'Settings');
+  const reportRows = readSheetObjects_(spreadsheet, 'Reports');
+  const fieldRows = readSheetObjects_(spreadsheet, 'KPI Fields');
+  const settingMap = {};
+
+  settingsRows.forEach((row) => {
+    const key = String(row.key || '').trim().toUpperCase();
+    if (key) settingMap[key] = row.value;
+  });
+
+  const fieldsByReport = {};
+  fieldRows
+    .filter((row) => isTruthy_(row.active))
+    .sort(
+      (a, b) =>
+        Number(a.display_order || 0) - Number(b.display_order || 0),
+    )
+    .forEach((row) => {
+      const reportId = String(row.report_id || '').trim();
+      if (!fieldsByReport[reportId]) fieldsByReport[reportId] = [];
+      fieldsByReport[reportId].push({
+        label: String(row.kpi_label || '').trim(),
+        searchLabels: splitList_(row.search_labels),
+        valuePosition: String(row.value_position || 'AFTER')
+          .trim()
+          .toUpperCase(),
+        tone: String(row.tone || '').trim(),
+        noteRule: String(row.note_rule || 'FIXED').trim().toUpperCase(),
+        noteValue: String(row.note_value || '').trim(),
+      });
+    });
+
+  const reports = reportRows
+    .filter((row) => isTruthy_(row.active))
+    .sort(
+      (a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0),
+    )
+    .map((row) => {
+      const id = String(row.report_id || '').trim();
+      return {
+        id,
+        title: String(row.report_name || '').trim(),
+        category: String(row.category || '').trim(),
+        sender: String(row.sender_email || '').trim().toLowerCase(),
+        query: String(row.gmail_search_query || '').trim(),
+        subjectContains: String(row.subject_contains || '').trim(),
+        dashboardUrlFallback: String(
+          row.dashboard_url_fallback || '',
+        ).trim(),
+        metrics: fieldsByReport[id] || [],
+      };
+    })
+    .filter((report) => report.id && report.title && report.query);
+
+  const timeZone =
+    String(settingMap.TIME_ZONE || '').trim() ||
+    DASHBOARD_CONFIG.fallbackTimeZone;
+  const cacheMinutes =
+    Number(settingMap.CACHE_MINUTES) ||
+    DASHBOARD_CONFIG.fallbackCacheMinutes;
+
+  return {
+    spreadsheetUrl: spreadsheet.getUrl(),
+    timeZone,
+    cacheMinutes,
+    cacheSeconds: Math.max(60, Math.round(cacheMinutes * 60)),
+    scheduledEmailHour: Number(settingMap.SCHEDULED_EMAIL_HOUR) || 11,
+    scheduledEmailRecipients: splitList_(settingMap.EMAIL_RECIPIENTS),
+    allowedEmails: splitList_(settingMap.ALLOWED_USERS).map((email) =>
+      email.toLowerCase(),
+    ),
+    dashboardUrl: String(settingMap.DASHBOARD_URL || '').trim(),
+    scheduleEnabled: isTruthy_(settingMap.SCHEDULE_ENABLED),
+    reports,
+  };
+}
+
+function readSheetObjects_(spreadsheet, sheetName) {
+  const sheet = spreadsheet.getSheetByName(sheetName);
+  if (!sheet) {
+    throw new Error(`Missing configuration sheet: ${sheetName}`);
+  }
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return [];
+  const keys = values[0].map((header) => headerKey_(header));
+
+  return values.slice(1).map((row) => {
+    const result = {};
+    keys.forEach((key, index) => {
+      if (key) result[key] = row[index];
+    });
+    return result;
+  });
+}
+
+function headerKey_(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+function splitList_(value) {
+  return String(value || '')
+    .split(/[|,;]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function isTruthy_(value) {
+  return (
+    value === true ||
+    value === 1 ||
+    ['true', 'yes', '1', 'active'].includes(
+      String(value || '').trim().toLowerCase(),
+    )
+  );
+}
 
 function doGet() {
   const viewerEmail = getViewerEmail_();
+  const runtimeConfig = readRuntimeConfiguration_();
 
-  if (!isAllowedViewer_(viewerEmail)) {
+  if (!isAllowedViewer_(viewerEmail, runtimeConfig)) {
     return HtmlService.createHtmlOutput(buildAccessDeniedHtml_(viewerEmail))
       .setTitle('Access required · Operations KPI Command Center')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
@@ -53,7 +148,8 @@ function doGet() {
 }
 
 function getDashboardData() {
-  assertAllowedViewer_();
+  const runtimeConfig = readRuntimeConfiguration_();
+  assertAllowedViewer_(runtimeConfig);
 
   const cached = CacheService.getScriptCache().get(DASHBOARD_CONFIG.cacheKey);
   if (cached) {
@@ -67,22 +163,23 @@ function getDashboardData() {
 
   if (stored) {
     const data = JSON.parse(stored);
-    if (!isStale_(data.updatedAt)) {
+    if (!isStale_(data.updatedAt, runtimeConfig.cacheMinutes)) {
       CacheService.getScriptCache().put(
         DASHBOARD_CONFIG.cacheKey,
         stored,
-        DASHBOARD_CONFIG.cacheSeconds,
+        runtimeConfig.cacheSeconds,
       );
       return data;
     }
   }
 
-  return refreshKpiCache_();
+  return refreshKpiCache_(runtimeConfig);
 }
 
 function refreshDashboardData() {
-  assertAllowedViewer_();
-  return refreshKpiCache_();
+  const runtimeConfig = readRuntimeConfiguration_();
+  assertAllowedViewer_(runtimeConfig);
+  return refreshKpiCache_(runtimeConfig);
 }
 
 function setupDashboard() {
@@ -99,23 +196,33 @@ function setupDashboard() {
     )
     .forEach((trigger) => ScriptApp.deleteTrigger(trigger));
 
+  const runtimeConfig = readRuntimeConfiguration_();
+
   ScriptApp.newTrigger('refreshKpiCache_')
     .timeBased()
     .everyHours(1)
     .create();
 
-  ScriptApp.newTrigger('sendScheduledKpiEmail_')
-    .timeBased()
-    .atHour(DASHBOARD_CONFIG.scheduledEmailHour)
-    .nearMinute(0)
-    .everyDays(1)
-    .inTimezone(DASHBOARD_CONFIG.timeZone)
-    .create();
+  if (
+    runtimeConfig.scheduleEnabled &&
+    runtimeConfig.scheduledEmailRecipients.length
+  ) {
+    ScriptApp.newTrigger('sendScheduledKpiEmail_')
+      .timeBased()
+      .atHour(runtimeConfig.scheduledEmailHour)
+      .nearMinute(0)
+      .everyDays(1)
+      .inTimezone(runtimeConfig.timeZone)
+      .create();
+  }
 
   return {
-    dashboard: refreshKpiCache_(),
-    schedule: `Daily around ${DASHBOARD_CONFIG.scheduledEmailHour}:00 ${DASHBOARD_CONFIG.timeZone}`,
-    recipients: DASHBOARD_CONFIG.scheduledEmailRecipients,
+    dashboard: refreshKpiCache_(runtimeConfig),
+    configurationSheet: runtimeConfig.spreadsheetUrl,
+    schedule: runtimeConfig.scheduleEnabled
+      ? `Daily around ${runtimeConfig.scheduledEmailHour}:00 ${runtimeConfig.timeZone}`
+      : 'Disabled in Settings',
+    recipients: runtimeConfig.scheduledEmailRecipients,
   };
 }
 
@@ -127,13 +234,22 @@ function sendTestKpiEmail() {
   return sendKpiEmail_(true);
 }
 
-function refreshKpiCache_() {
-  const reports = DASHBOARD_CONFIG.reports.map((config) =>
-    buildReport_(config),
+function refreshKpiCache_(runtimeConfig) {
+  const config =
+    runtimeConfig && Array.isArray(runtimeConfig.reports)
+      ? runtimeConfig
+      : readRuntimeConfiguration_();
+  const reports = config.reports.map((reportConfig) =>
+    buildReport_(reportConfig, config.timeZone),
   );
   const result = {
     updatedAt: new Date().toISOString(),
-    timeZone: DASHBOARD_CONFIG.timeZone,
+    timeZone: config.timeZone,
+    dashboardUrl: config.dashboardUrl,
+    configurationUrl:
+      getViewerEmail_() === DASHBOARD_CONFIG.ownerEmail
+        ? config.spreadsheetUrl
+        : '',
     viewerEmail: getViewerEmail_(),
     reports,
   };
@@ -146,7 +262,7 @@ function refreshKpiCache_() {
   CacheService.getScriptCache().put(
     DASHBOARD_CONFIG.cacheKey,
     serialized,
-    DASHBOARD_CONFIG.cacheSeconds,
+    config.cacheSeconds,
   );
 
   return result;
@@ -161,17 +277,18 @@ function sendKpiEmail_(isTest) {
     throw new Error('The Apps Script email quota has been reached for today.');
   }
 
-  const data = refreshKpiCache_();
+  const runtimeConfig = readRuntimeConfiguration_();
+  const data = refreshKpiCache_(runtimeConfig);
   const dateLabel = Utilities.formatDate(
     new Date(),
-    DASHBOARD_CONFIG.timeZone,
+    runtimeConfig.timeZone,
     'dd MMM yyyy',
   );
   const prefix = isTest ? '[TEST] ' : '';
   const subject = `${prefix}Operations KPI Summary — ${dateLabel}`;
   const recipients = isTest
     ? [DASHBOARD_CONFIG.ownerEmail]
-    : DASHBOARD_CONFIG.scheduledEmailRecipients;
+    : runtimeConfig.scheduledEmailRecipients;
 
   MailApp.sendEmail({
     to: recipients.join(','),
@@ -194,7 +311,7 @@ function buildKpiEmailText_(data) {
     'Operations KPI Command Center',
     `Updated: ${Utilities.formatDate(
       new Date(data.updatedAt),
-      DASHBOARD_CONFIG.timeZone,
+      data.timeZone,
       'dd MMM yyyy, hh:mm a',
     )}`,
     '',
@@ -214,14 +331,14 @@ function buildKpiEmailText_(data) {
     lines.push('');
   });
 
-  lines.push(`Consolidated dashboard: ${DASHBOARD_CONFIG.dashboardUrl}`);
+  lines.push(`Consolidated dashboard: ${data.dashboardUrl}`);
   return lines.join('\n');
 }
 
 function buildKpiEmailHtml_(data, isTest) {
   const updated = Utilities.formatDate(
     new Date(data.updatedAt),
-    DASHBOARD_CONFIG.timeZone,
+    data.timeZone,
     'dd MMM yyyy, hh:mm a',
   );
   const testLabel = isTest
@@ -269,14 +386,14 @@ function buildKpiEmailHtml_(data, isTest) {
       </header>
       ${reportSections}
       <footer style="padding:24px 30px">
-        <a href="${escapeHtml_(DASHBOARD_CONFIG.dashboardUrl)}" style="color:#1e5c45;font-size:14px;font-weight:700">Open consolidated KPI dashboard →</a>
+        <a href="${escapeHtml_(data.dashboardUrl)}" style="color:#1e5c45;font-size:14px;font-weight:700">Open consolidated KPI dashboard →</a>
         <p style="margin:14px 0 0;color:#8a938f;font-size:10px">Gmail links work only when the signed-in viewer has access to the original message.</p>
       </footer>
     </div>
   </div>`;
 }
 
-function buildReport_(config) {
+function buildReport_(config, timeZone) {
   const message = findLatestReportMessage_(config);
 
   if (!message) {
@@ -289,18 +406,15 @@ function buildReport_(config) {
       statusLabel: 'No matching email',
       reportingDate: '—',
       subject: 'No report found',
-      metrics: emptyMetrics_(config.parser),
-      dashboardUrl: '',
+      metrics: emptyConfiguredMetrics_(config.metrics),
+      dashboardUrl: config.dashboardUrlFallback,
       emailUrl: '',
     };
   }
 
   const plainBody = normalizeText_(message.getPlainBody());
   const htmlBody = message.getBody();
-  const metrics =
-    config.parser === 'inventory'
-      ? parseInventoryMetrics_(plainBody)
-      : parseFefoMetrics_(plainBody);
+  const metrics = parseConfiguredMetrics_(plainBody, config.metrics);
 
   return {
     id: config.id,
@@ -311,13 +425,15 @@ function buildReport_(config) {
     statusLabel: 'Latest received',
     reportingDate: Utilities.formatDate(
       message.getDate(),
-      DASHBOARD_CONFIG.timeZone,
+      timeZone,
       'dd MMM yyyy',
     ),
     receivedAt: message.getDate().toISOString(),
     subject: message.getSubject(),
     metrics,
-    dashboardUrl: extractDashboardUrl_(htmlBody, plainBody),
+    dashboardUrl:
+      extractDashboardUrl_(htmlBody, plainBody) ||
+      config.dashboardUrlFallback,
     emailUrl: buildPortableGmailUrl_(message),
   };
 }
@@ -348,82 +464,40 @@ function findLatestReportMessage_(config) {
   return matchingMessages[0] || null;
 }
 
-function parseInventoryMetrics_(text) {
-  return [
-    metric_(
-      'Last Quarter',
-      extractMetricAfter_(text, ['Last Quarter']),
-      extractDateRangeAfter_(text, 'Last Quarter'),
-      'positive',
-    ),
-    metric_(
-      'Last Month',
-      extractMetricAfter_(text, ['Last Month']),
-      extractDateRangeAfter_(text, 'Last Month'),
-      'positive',
-    ),
-    metric_(
-      'Month to Date',
-      extractMetricAfter_(text, ['Month to Date', 'MTD']),
-      extractDateRangeAfter_(text, 'Month to Date'),
-      'positive',
-    ),
-    metric_(
-      'Yesterday',
-      extractMetricAfter_(text, ['Yesterday']),
-      includesIgnoreCase_(text, 'No cycle count was performed')
+function parseConfiguredMetrics_(text, metricConfigs) {
+  return metricConfigs.map((config) => {
+    const labels = config.searchLabels.length
+      ? config.searchLabels
+      : [config.label];
+    const value =
+      config.valuePosition === 'BEFORE_OR_AFTER'
+        ? extractMetricBeforeOrAfter_(text, labels)
+        : extractMetricAfter_(text, labels);
+    let note = config.noteValue || 'Latest reported value';
+
+    if (config.noteRule === 'DATE_RANGE') {
+      note =
+        extractDateRangeAfter_(
+          text,
+          config.noteValue || labels[0],
+        ) || 'Date range not found';
+    } else if (config.noteRule === 'NO_CYCLE_COUNT') {
+      note = includesIgnoreCase_(text, 'No cycle count was performed')
         ? 'No cycle count performed'
-        : extractDateRangeAfter_(text, 'Yesterday'),
-      'warning',
-    ),
-  ];
+        : extractDateRangeAfter_(
+            text,
+            config.noteValue || labels[0],
+          ) || 'Latest reported value';
+    }
+
+    return metric_(config.label, value, note, config.tone);
+  });
 }
 
-function parseFefoMetrics_(text) {
-  return [
-    metric_(
-      'Violated Batch Count',
-      extractMetricBeforeOrAfter_(text, ['Violated Batch Count']),
-      'Latest reported value',
-      'warning',
-    ),
-    metric_(
-      'Dispatch First Batch Count',
-      extractMetricBeforeOrAfter_(text, [
-        'Disaptch First Batch Count',
-        'Dispatch First Batch Count',
-      ]),
-      'Latest reported value',
-      '',
-    ),
-    metric_(
-      'Overall FEFO Compliance',
-      extractMetricBeforeOrAfter_(text, ['Overall FEFO Compliance %']),
-      'Latest reported value',
-      'positive',
-    ),
-    metric_(
-      'Overall FEFO Non-Compliance',
-      extractMetricBeforeOrAfter_(text, [
-        'Overall FEFO Non-Compliance %',
-      ]),
-      'Latest reported value',
-      'warning',
-    ),
-  ];
-}
-
-function emptyMetrics_(parser) {
-  const labels =
-    parser === 'inventory'
-      ? ['Last Quarter', 'Last Month', 'Month to Date', 'Yesterday']
-      : [
-          'Violated Batch Count',
-          'Dispatch First Batch Count',
-          'Overall FEFO Compliance',
-          'Overall FEFO Non-Compliance',
-        ];
-  return labels.map((label) => metric_(label, '—', 'Email not found', ''));
+function emptyConfiguredMetrics_(metricConfigs) {
+  return metricConfigs.map((config) =>
+    metric_(config.label, '—', 'Email not found', config.tone),
+  );
 }
 
 function metric_(label, value, note, tone) {
@@ -569,21 +643,24 @@ function getViewerEmail_() {
   return (Session.getActiveUser().getEmail() || '').trim().toLowerCase();
 }
 
-function isAllowedViewer_(email) {
-  return Boolean(email) && DASHBOARD_CONFIG.allowedEmails.includes(email);
+function isAllowedViewer_(email, runtimeConfig) {
+  return (
+    Boolean(email) &&
+    runtimeConfig.allowedEmails.includes(email.toLowerCase())
+  );
 }
 
-function assertAllowedViewer_() {
+function assertAllowedViewer_(runtimeConfig) {
   const viewerEmail = getViewerEmail_();
-  if (!isAllowedViewer_(viewerEmail)) {
+  if (!isAllowedViewer_(viewerEmail, runtimeConfig)) {
     throw new Error('Access denied. Sign in with an approved Mosaic Wellness account.');
   }
 }
 
-function isStale_(isoDate) {
+function isStale_(isoDate, staleAfterMinutes) {
   if (!isoDate) return true;
   const ageMs = Date.now() - new Date(isoDate).getTime();
-  return ageMs > DASHBOARD_CONFIG.staleAfterMinutes * 60 * 1000;
+  return ageMs > staleAfterMinutes * 60 * 1000;
 }
 
 function normalizeText_(text) {
