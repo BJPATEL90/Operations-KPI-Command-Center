@@ -198,6 +198,7 @@ assert.equal(runtime.reports[0].metrics[0].label, "Last Quarter");
 assert.equal(runtime.reports[1].id, "inward-tat");
 assert.equal(runtime.reports[3].displayType, "OWNER_AGEING_TABLE");
 assert.equal(runtime.reports[4].displayType, "PUTAWAY_TOTALS_TABLE");
+assert.match(context.buildConfigSignature_(runtime), /inward-tat/);
 assert.deepEqual(Array.from(runtime.allowedEmails), [
   "bhavesh.patel@mosaicwellness.in",
   "shailendra@mosaicwellness.in",

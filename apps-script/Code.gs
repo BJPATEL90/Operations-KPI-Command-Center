@@ -153,10 +153,14 @@ function doGet() {
 function getDashboardData() {
   const runtimeConfig = readRuntimeConfiguration_();
   assertAllowedViewer_(runtimeConfig);
+  const configSignature = buildConfigSignature_(runtimeConfig);
 
   const cached = CacheService.getScriptCache().get(DASHBOARD_CONFIG.cacheKey);
   if (cached) {
-    return JSON.parse(cached);
+    const cachedData = JSON.parse(cached);
+    if (cachedData.configSignature === configSignature) {
+      return cachedData;
+    }
   }
 
   const stored =
@@ -166,7 +170,10 @@ function getDashboardData() {
 
   if (stored) {
     const data = JSON.parse(stored);
-    if (!isStale_(data.updatedAt, runtimeConfig.cacheMinutes)) {
+    if (
+      data.configSignature === configSignature &&
+      !isStale_(data.updatedAt, runtimeConfig.cacheMinutes)
+    ) {
       CacheService.getScriptCache().put(
         DASHBOARD_CONFIG.cacheKey,
         stored,
@@ -247,6 +254,7 @@ function refreshKpiCache_(runtimeConfig) {
   );
   const result = {
     updatedAt: new Date().toISOString(),
+    configSignature: buildConfigSignature_(config),
     timeZone: config.timeZone,
     dashboardUrl: config.dashboardUrl,
     configurationUrl:
@@ -269,6 +277,31 @@ function refreshKpiCache_(runtimeConfig) {
   );
 
   return result;
+}
+
+function buildConfigSignature_(runtimeConfig) {
+  return runtimeConfig.reports
+    .map((report) => {
+      const metricSignature = report.metrics
+        .map((metric) =>
+          [
+            metric.label,
+            metric.searchLabels.join(','),
+            metric.valuePosition,
+            metric.noteRule,
+          ].join(':'),
+        )
+        .join(';');
+      return [
+        report.id,
+        report.title,
+        report.query,
+        report.subjectContains,
+        report.displayType,
+        metricSignature,
+      ].join('|');
+    })
+    .join('||');
 }
 
 function sendScheduledKpiEmail_() {
