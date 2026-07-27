@@ -66,6 +66,35 @@ Regards,
 Farhana Teli
 `;
 
+const inwardTatBody = `
+Vehicle Arrival to Putaway TAT
+Last Quarter, Last Month, Month to Date, and Yesterday.
+KPI1: Unloading to Putaway · KPI2: GRN to Putaway · KPI3: Unloading to GRN
+LAST QUARTER
+29:50
+KPI2: 13:00
+KPI3: 15:50
+01 Apr – 30 Jun 2026
+LAST MONTH
+28:24
+KPI2: 14:24
+KPI3: 14:00
+01 Jun – 30 Jun 2026
+MONTH TO DATE
+27:09
+KPI2: 17:51
+KPI3: 09:29
+Records: 552
+01 Jul – 27 Jul 2026
+YESTERDAY
+—
+KPI2: —
+KPI3: —
+Records: 26
+27 Jul 2026
+Yesterday: 0 of 26 records are complete.
+`;
+
 const inventory = context.parseConfiguredMetrics_(inventoryBody, [
   { label: "Last Quarter", searchLabels: ["Last Quarter"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Quarter" },
   { label: "Last Month", searchLabels: ["Last Month"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Month" },
@@ -78,6 +107,12 @@ const fefo = context.parseConfiguredMetrics_(fefoBody, [
   { label: "Overall FEFO Compliance", searchLabels: ["Overall FEFO Compliance %"], valuePosition: "BEFORE_OR_AFTER", tone: "positive", noteRule: "FIXED", noteValue: "Latest reported value" },
   { label: "Overall FEFO Non-Compliance", searchLabels: ["Overall FEFO Non-Compliance %"], valuePosition: "BEFORE_OR_AFTER", tone: "warning", noteRule: "FIXED", noteValue: "Latest reported value" },
 ]);
+const inwardTat = context.parseConfiguredMetrics_(inwardTatBody, [
+  { label: "Last Quarter", searchLabels: ["Last Quarter"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Quarter" },
+  { label: "Last Month", searchLabels: ["Last Month"], valuePosition: "AFTER", tone: "", noteRule: "DATE_RANGE", noteValue: "Last Month" },
+  { label: "Month to Date", searchLabels: ["Month to Date", "MTD"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Month to Date" },
+  { label: "Yesterday", searchLabels: ["Yesterday"], valuePosition: "AFTER", tone: "warning", noteRule: "DATE_RANGE", noteValue: "Yesterday" },
+]);
 
 assert.deepEqual(
   Array.from(inventory, (metric) => metric.value),
@@ -86,6 +121,19 @@ assert.deepEqual(
 assert.deepEqual(
   Array.from(fefo, (metric) => metric.value),
   ["12", "21", "79%", "21%"],
+);
+assert.deepEqual(
+  Array.from(inwardTat, (metric) => metric.value),
+  ["29:50", "28:24", "27:09", "—"],
+);
+assert.deepEqual(
+  Array.from(inwardTat, (metric) => metric.note),
+  [
+    "01 Apr – 30 Jun 2026",
+    "01 Jun – 30 Jun 2026",
+    "01 Jul – 27 Jul 2026",
+    "27 Jul 2026",
+  ],
 );
 const gatepass = context.parseOwnerAgeingTable_(gatepassBody);
 assert.equal(gatepass.rows.length, 4);
@@ -117,13 +165,15 @@ const sheets = {
   Reports: [
     ["Active", "Sort Order", "Report ID", "Report Name", "Category", "Sender Email", "Gmail Search Query", "Subject Contains", "Dashboard URL Fallback", "Display Type"],
     [true, 1, "inventory-cycle-count", "Inventory Cycle Count", "Inventory control", "bhavesh.patel@mosaicwellness.in", "inventory query", "Daily Cycle count inventory", "https://example.com/inventory", "METRIC_CARDS"],
-    [true, 2, "fefo-violations", "FEFO Violations", "Dispatch compliance", "farhana.teli@mosaicwellness.in", "fefo query", "Daily FEFO Violation Check", "https://example.com/fefo", "METRIC_CARDS"],
-    [true, 3, "open-gatepass-ageing", "Open Gatepass Ageing", "Gatepass ageing", "farhana.teli@mosaicwellness.in", "gatepass query", "Open Gatepass Ageing Report", "", "OWNER_AGEING_TABLE"],
-    [true, 4, "open-putaway", "Open Putaway", "Putaway ageing", "farhana.teli@mosaicwellness.in", "putaway query", "Open Putaway Report", "", "PUTAWAY_TOTALS_TABLE"],
+    [true, 2, "inward-tat", "Inward TAT", "Inbound operations", "bhavesh.patel@mosaicwellness.in", "inward query", "Inward TAT |", "https://example.com/inward", "METRIC_CARDS"],
+    [true, 3, "fefo-violations", "FEFO Violations", "Dispatch compliance", "farhana.teli@mosaicwellness.in", "fefo query", "Daily FEFO Violation Check", "https://example.com/fefo", "METRIC_CARDS"],
+    [true, 4, "open-gatepass-ageing", "Open Gatepass Ageing", "Gatepass ageing", "farhana.teli@mosaicwellness.in", "gatepass query", "Open Gatepass Ageing Report", "", "OWNER_AGEING_TABLE"],
+    [true, 5, "open-putaway", "Open Putaway", "Putaway ageing", "farhana.teli@mosaicwellness.in", "putaway query", "Open Putaway Report", "", "PUTAWAY_TOTALS_TABLE"],
   ],
   "KPI Fields": [
     ["Active", "Report ID", "Display Order", "KPI Label", "Search Labels", "Value Position", "Tone", "Note Rule", "Note Value"],
     [true, "inventory-cycle-count", 1, "Last Quarter", "Last Quarter", "AFTER", "positive", "DATE_RANGE", "Last Quarter"],
+    [true, "inward-tat", 1, "Last Quarter", "Last Quarter", "AFTER", "positive", "DATE_RANGE", "Last Quarter"],
     [true, "fefo-violations", 1, "Violated Batch Count", "Violated Batch Count", "BEFORE_OR_AFTER", "warning", "FIXED", "Latest reported value"],
   ],
 };
@@ -143,10 +193,11 @@ context.SpreadsheetApp = {
 };
 
 const runtime = context.readRuntimeConfiguration_();
-assert.equal(runtime.reports.length, 4);
+assert.equal(runtime.reports.length, 5);
 assert.equal(runtime.reports[0].metrics[0].label, "Last Quarter");
-assert.equal(runtime.reports[2].displayType, "OWNER_AGEING_TABLE");
-assert.equal(runtime.reports[3].displayType, "PUTAWAY_TOTALS_TABLE");
+assert.equal(runtime.reports[1].id, "inward-tat");
+assert.equal(runtime.reports[3].displayType, "OWNER_AGEING_TABLE");
+assert.equal(runtime.reports[4].displayType, "PUTAWAY_TOTALS_TABLE");
 assert.deepEqual(Array.from(runtime.allowedEmails), [
   "bhavesh.patel@mosaicwellness.in",
   "shailendra@mosaicwellness.in",

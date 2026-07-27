@@ -199,6 +199,18 @@ const reportRows = [
   [
     true,
     2,
+    "inward-tat",
+    "Inward TAT",
+    "Inbound operations",
+    "bhavesh.patel@mosaicwellness.in",
+    'from:bhavesh.patel@mosaicwellness.in subject:"Inward TAT |" -"MTD update" -in:trash',
+    "Inward TAT |",
+    "https://bjpatel90.github.io/Inward-TAT/",
+    "METRIC_CARDS",
+  ],
+  [
+    true,
+    3,
     "fefo-violations",
     "FEFO Violations",
     "Dispatch compliance",
@@ -210,7 +222,7 @@ const reportRows = [
   ],
   [
     true,
-    3,
+    4,
     "open-gatepass-ageing",
     "Open Gatepass Ageing",
     "Gatepass ageing",
@@ -222,7 +234,7 @@ const reportRows = [
   ],
   [
     true,
-    4,
+    5,
     "open-putaway",
     "Open Putaway",
     "Putaway ageing",
@@ -263,15 +275,15 @@ reports.getRange("J2:J100").dataValidation = {
     ],
   },
 };
-reports.getRange("A1:A5").format.columnWidth = 12;
-reports.getRange("B1:B5").format.columnWidth = 12;
-reports.getRange("C1:C5").format.columnWidth = 25;
-reports.getRange("D1:F5").format.columnWidth = 27;
-reports.getRange("G1:G5").format.columnWidth = 62;
-reports.getRange("H1:H5").format.columnWidth = 36;
-reports.getRange("I1:I5").format.columnWidth = 60;
-reports.getRange("J1:J5").format.columnWidth = 28;
-reports.getRange("A1:J5").format.rowHeight = 42;
+reports.getRange("A1:A6").format.columnWidth = 12;
+reports.getRange("B1:B6").format.columnWidth = 12;
+reports.getRange("C1:C6").format.columnWidth = 25;
+reports.getRange("D1:F6").format.columnWidth = 27;
+reports.getRange("G1:G6").format.columnWidth = 62;
+reports.getRange("H1:H6").format.columnWidth = 36;
+reports.getRange("I1:I6").format.columnWidth = 60;
+reports.getRange("J1:J6").format.columnWidth = 28;
+reports.getRange("A1:J6").format.rowHeight = 42;
 reports.tables.add(`A1:J${reportRows.length}`, true, "ReportsTable");
 
 const fieldRows = [
@@ -290,6 +302,10 @@ const fieldRows = [
   [true, "inventory-cycle-count", 2, "Last Month", "Last Month", "AFTER", "positive", "DATE_RANGE", "Last Month"],
   [true, "inventory-cycle-count", 3, "Month to Date", "Month to Date|MTD", "AFTER", "positive", "DATE_RANGE", "Month to Date"],
   [true, "inventory-cycle-count", 4, "Yesterday", "Yesterday", "AFTER", "warning", "NO_CYCLE_COUNT", "Yesterday"],
+  [true, "inward-tat", 1, "Last Quarter", "Last Quarter", "AFTER", "positive", "DATE_RANGE", "Last Quarter"],
+  [true, "inward-tat", 2, "Last Month", "Last Month", "AFTER", "", "DATE_RANGE", "Last Month"],
+  [true, "inward-tat", 3, "Month to Date", "Month to Date|MTD", "AFTER", "positive", "DATE_RANGE", "Month to Date"],
+  [true, "inward-tat", 4, "Yesterday", "Yesterday", "AFTER", "warning", "DATE_RANGE", "Yesterday"],
   [true, "fefo-violations", 1, "Violated Batch Count", "Violated Batch Count", "BEFORE_OR_AFTER", "warning", "FIXED", "Latest reported value"],
   [true, "fefo-violations", 2, "Dispatch First Batch Count", "Disaptch First Batch Count|Dispatch First Batch Count", "BEFORE_OR_AFTER", "", "FIXED", "Latest reported value"],
   [true, "fefo-violations", 3, "Overall FEFO Compliance", "Overall FEFO Compliance %", "BEFORE_OR_AFTER", "positive", "FIXED", "Latest reported value"],
@@ -324,14 +340,14 @@ fields.getRange("G2:G200").dataValidation = {
 fields.getRange("H2:H200").dataValidation = {
   rule: { type: "list", values: ["FIXED", "DATE_RANGE", "NO_CYCLE_COUNT"] },
 };
-fields.getRange("A1:A9").format.columnWidth = 12;
-fields.getRange("B1:B9").format.columnWidth = 27;
-fields.getRange("C1:C9").format.columnWidth = 14;
-fields.getRange("D1:D9").format.columnWidth = 31;
-fields.getRange("E1:E9").format.columnWidth = 46;
-fields.getRange("F1:H9").format.columnWidth = 22;
-fields.getRange("I1:I9").format.columnWidth = 34;
-fields.getRange("A1:I9").format.rowHeight = 38;
+fields.getRange("A1:A13").format.columnWidth = 12;
+fields.getRange("B1:B13").format.columnWidth = 27;
+fields.getRange("C1:C13").format.columnWidth = 14;
+fields.getRange("D1:D13").format.columnWidth = 31;
+fields.getRange("E1:E13").format.columnWidth = 46;
+fields.getRange("F1:H13").format.columnWidth = 22;
+fields.getRange("I1:I13").format.columnWidth = 34;
+fields.getRange("A1:I13").format.rowHeight = 38;
 fields.tables.add(`A1:I${fieldRows.length}`, true, "KpiFieldsTable");
 
 const summary = await workbook.inspect({

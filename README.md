@@ -6,6 +6,7 @@ reports from Gmail into one manager-friendly view.
 ## Current reports
 
 - Inventory Cycle Count
+- Inward TAT
 - FEFO Violations
 - Open Gatepass Ageing
 - Open Putaway

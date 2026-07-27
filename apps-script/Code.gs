@@ -840,10 +840,10 @@ function metric_(label, value, note, tone) {
 
 function extractMetricAfter_(text, labels) {
   for (let i = 0; i < labels.length; i += 1) {
-    const index = text.toLowerCase().indexOf(labels[i].toLowerCase());
-    if (index === -1) continue;
+    const labelMatch = findLabelMatch_(text, labels[i]);
+    if (!labelMatch) continue;
 
-    const after = text.slice(index + labels[i].length, index + labels[i].length + 260);
+    const after = text.slice(labelMatch.end, labelMatch.end + 260);
     const value = firstStandaloneMetric_(after);
     if (value) return value;
   }
@@ -852,14 +852,17 @@ function extractMetricAfter_(text, labels) {
 
 function extractMetricBeforeOrAfter_(text, labels) {
   for (let i = 0; i < labels.length; i += 1) {
-    const index = text.toLowerCase().indexOf(labels[i].toLowerCase());
-    if (index === -1) continue;
+    const labelMatch = findLabelMatch_(text, labels[i]);
+    if (!labelMatch) continue;
 
-    const before = text.slice(Math.max(0, index - 180), index);
+    const before = text.slice(
+      Math.max(0, labelMatch.start - 180),
+      labelMatch.start,
+    );
     const valueBefore = lastStandaloneMetric_(before);
     if (valueBefore) return valueBefore;
 
-    const after = text.slice(index + labels[i].length, index + labels[i].length + 180);
+    const after = text.slice(labelMatch.end, labelMatch.end + 180);
     const valueAfter = firstStandaloneMetric_(after);
     if (valueAfter) return valueAfter;
   }
@@ -874,11 +877,15 @@ function firstStandaloneMetric_(text) {
     .slice(0, 10);
 
   for (let i = 0; i < lines.length; i += 1) {
-    const match = lines[i].match(/^([₹$]?\s*[\d,]+(?:\.\d+)?%?)$/);
+    const match = lines[i].match(
+      /^([₹$]?\s*[\d,]+(?:\.\d+)?%?|\d{1,3}:\d{2}|—|-)$/,
+    );
     if (match) return match[1].replace(/\s+/g, '');
   }
 
-  const fallback = text.match(/(?:^|\s)(\d[\d,]*(?:\.\d+)?%?)(?=\s|$)/);
+  const fallback = text.match(
+    /(?:^|\s)(\d{1,3}:\d{2}|\d[\d,]*(?:\.\d+)?%?|—)(?=\s|$)/,
+  );
   return fallback ? fallback[1] : '';
 }
 
@@ -891,21 +898,56 @@ function lastStandaloneMetric_(text) {
     .reverse();
 
   for (let i = 0; i < lines.length; i += 1) {
-    const match = lines[i].match(/^([₹$]?\s*[\d,]+(?:\.\d+)?%?)$/);
+    const match = lines[i].match(
+      /^([₹$]?\s*[\d,]+(?:\.\d+)?%?|\d{1,3}:\d{2}|—|-)$/,
+    );
     if (match) return match[1].replace(/\s+/g, '');
   }
   return '';
 }
 
 function extractDateRangeAfter_(text, label) {
-  const index = text.toLowerCase().indexOf(label.toLowerCase());
-  if (index === -1) return '';
+  const labelMatch = findLabelMatch_(text, label);
+  if (!labelMatch) return '';
 
-  const after = text.slice(index, index + 520);
-  const match = after.match(
+  const after = text.slice(labelMatch.start, labelMatch.start + 520);
+  const fullRange = after.match(
     /(\d{2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–]\s*(\d{2}\s+[A-Za-z]{3}\s+\d{4})/,
   );
-  return match ? `${match[1]} – ${match[2]}` : '';
+  if (fullRange) return `${fullRange[1]} – ${fullRange[2]}`;
+
+  const compactRange = after.match(
+    /(\d{2}\s+[A-Za-z]{3})\s*[-–]\s*(\d{2}\s+[A-Za-z]{3}\s+\d{4})/,
+  );
+  if (compactRange) return `${compactRange[1]} – ${compactRange[2]}`;
+
+  const singleDate = after.match(/\d{2}\s+[A-Za-z]{3}\s+\d{4}/);
+  return singleDate ? singleDate[0] : '';
+}
+
+function findLabelMatch_(text, label) {
+  const escapedLabel = String(label || '').replace(
+    /[.*+?^${}()|[\]\\]/g,
+    '\\$&',
+  );
+  if (!escapedLabel) return null;
+
+  const standalonePattern = new RegExp(
+    `(?:^|\\n)\\s*${escapedLabel}\\s*(?=\\n|$)`,
+    'i',
+  );
+  const standaloneMatch = standalonePattern.exec(text);
+  if (standaloneMatch) {
+    return {
+      start: standaloneMatch.index,
+      end: standaloneMatch.index + standaloneMatch[0].length,
+    };
+  }
+
+  const index = text.toLowerCase().indexOf(String(label).toLowerCase());
+  return index === -1
+    ? null
+    : { start: index, end: index + String(label).length };
 }
 
 function extractDashboardUrl_(htmlBody, plainBody) {
