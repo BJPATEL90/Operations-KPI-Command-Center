@@ -19,6 +19,7 @@ application infrastructure.
 
 - Inventory Cycle Count
 - FEFO Violations
+- Open Gatepass Ageing — owner-wise ageing table
 
 The web app reads Gmail in read-only mode, caches parsed KPI values, refreshes
 stale data on page load, and exposes a manual refresh action. It sends the

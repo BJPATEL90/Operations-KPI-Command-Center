@@ -59,6 +59,9 @@ function readRuntimeConfiguration_() {
         dashboardUrlFallback: String(
           row.dashboard_url_fallback || '',
         ).trim(),
+        displayType: String(row.display_type || 'METRIC_CARDS')
+          .trim()
+          .toUpperCase(),
         metrics: fieldsByReport[id] || [],
       };
     })
@@ -319,9 +322,26 @@ function buildKpiEmailText_(data) {
 
   data.reports.forEach((report) => {
     lines.push(report.title.toUpperCase());
-    report.metrics.forEach((metric) => {
-      lines.push(`${metric.label}: ${metric.value}`);
-    });
+    if (report.displayType === 'OWNER_AGEING_TABLE' && report.table) {
+      report.table.rows.forEach((row) => {
+        lines.push(
+          `${row.owner}: 0–15 ${formatIndianNumber_(row.days0To15Qty)} / ${row.days0To15Count} GP | ` +
+            `16–30 ${formatIndianNumber_(row.days16To30Qty)} / ${row.days16To30Count} GP | ` +
+            `Above 30 ${formatIndianNumber_(row.above30Qty)} / ${row.above30Count} GP | ` +
+            `Total ${formatIndianNumber_(row.totalQty)} / ${row.totalCount} GP`,
+        );
+      });
+      if (report.table.totals) {
+        const total = report.table.totals;
+        lines.push(
+          `GRAND TOTAL: ${formatIndianNumber_(total.totalQty)} open quantity / ${total.totalCount} gatepasses`,
+        );
+      }
+    } else {
+      report.metrics.forEach((metric) => {
+        lines.push(`${metric.label}: ${metric.value}`);
+      });
+    }
     if (report.dashboardUrl) {
       lines.push(`Dashboard: ${report.dashboardUrl}`);
     }
@@ -346,20 +366,10 @@ function buildKpiEmailHtml_(data, isTest) {
     : '';
   const reportSections = data.reports
     .map((report) => {
-      const metricCells = report.metrics
-        .map((metric) => {
-          const color =
-            metric.tone === 'warning'
-              ? '#d95c43'
-              : metric.tone === 'positive'
-                ? '#1e5c45'
-                : '#14211c';
-          return `<td style="width:25%;padding:12px;border:1px solid #dcd8ce;vertical-align:top">
-            <div style="min-height:30px;color:#68736e;font-size:11px;line-height:1.3">${escapeHtml_(metric.label)}</div>
-            <strong style="display:block;margin-top:8px;color:${color};font-size:23px">${escapeHtml_(metric.value)}</strong>
-          </td>`;
-        })
-        .join('');
+      const reportBody =
+        report.displayType === 'OWNER_AGEING_TABLE'
+          ? buildOwnerAgeingEmailTable_(report.table)
+          : buildMetricEmailTable_(report.metrics);
       const dashboardButton = report.dashboardUrl
         ? `<a href="${escapeHtml_(report.dashboardUrl)}" style="display:inline-block;padding:10px 14px;border-radius:7px;background:#1e5c45;color:#fff;font-size:13px;font-weight:700;text-decoration:none">Open dashboard</a>`
         : '';
@@ -370,7 +380,7 @@ function buildKpiEmailHtml_(data, isTest) {
       return `<section style="padding:24px 30px;border-bottom:1px solid #dcd8ce">
         <div style="color:#1e5c45;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase">${escapeHtml_(report.category)}</div>
         <h2 style="margin:7px 0 14px;color:#14211c;font-size:21px">${escapeHtml_(report.title)}</h2>
-        <table role="presentation" style="width:100%;border-collapse:collapse"><tr>${metricCells}</tr></table>
+        ${reportBody}
         <div style="margin-top:18px">${dashboardButton}${emailLink}</div>
         <div style="margin-top:12px;color:#8a938f;font-size:10px">Source: ${escapeHtml_(report.subject)}</div>
       </section>`;
@@ -393,6 +403,83 @@ function buildKpiEmailHtml_(data, isTest) {
   </div>`;
 }
 
+function buildMetricEmailTable_(metrics) {
+  const metricCells = metrics
+    .map((metric) => {
+      const color =
+        metric.tone === 'warning'
+          ? '#d95c43'
+          : metric.tone === 'positive'
+            ? '#1e5c45'
+            : '#14211c';
+      return `<td style="width:25%;padding:12px;border:1px solid #dcd8ce;vertical-align:top">
+        <div style="min-height:30px;color:#68736e;font-size:11px;line-height:1.3">${escapeHtml_(metric.label)}</div>
+        <strong style="display:block;margin-top:8px;color:${color};font-size:23px">${escapeHtml_(metric.value)}</strong>
+      </td>`;
+    })
+    .join('');
+  return `<table role="presentation" style="width:100%;border-collapse:collapse"><tr>${metricCells}</tr></table>`;
+}
+
+function buildOwnerAgeingEmailTable_(table) {
+  if (!table || !table.rows.length) {
+    return '<div style="padding:14px;background:#fff0ec;color:#d95c43">The owner ageing table could not be parsed from the latest email.</div>';
+  }
+
+  const rowHtml = table.rows
+    .map(
+      (row) => `<tr>
+        <td style="padding:9px;border:1px solid #dcd8ce;font-weight:700">${escapeHtml_(row.owner)}</td>
+        ${ownerAgeingEmailNumberCells_(row)}
+      </tr>`,
+    )
+    .join('');
+  const totalHtml = table.totals
+    ? `<tr style="background:#203f63;color:#fff;font-weight:700">
+        <td style="padding:10px;border:1px solid #dcd8ce">GRAND TOTAL</td>
+        ${ownerAgeingEmailNumberCells_(table.totals, true)}
+      </tr>`
+    : '';
+
+  return `<div style="overflow-x:auto">
+    <table role="presentation" style="width:100%;min-width:720px;border-collapse:collapse;font-size:11px;text-align:right">
+      <tr style="color:#fff;text-align:center">
+        <th rowspan="2" style="padding:9px;background:#203f63;border:1px solid #dcd8ce;text-align:left">Gatepass Owner</th>
+        <th colspan="2" style="padding:9px;background:#16a05a;border:1px solid #dcd8ce">0–15 Days</th>
+        <th colspan="2" style="padding:9px;background:#df7d00;border:1px solid #dcd8ce">16–30 Days</th>
+        <th colspan="2" style="padding:9px;background:#e42125;border:1px solid #dcd8ce">Above 30 Days</th>
+        <th colspan="2" style="padding:9px;background:#203f63;border:1px solid #dcd8ce">Grand Total</th>
+      </tr>
+      <tr style="background:#eef3f6;color:#14211c;text-align:center">
+        <th style="padding:7px;border:1px solid #dcd8ce">Open Qty</th><th style="padding:7px;border:1px solid #dcd8ce">GP Count</th>
+        <th style="padding:7px;border:1px solid #dcd8ce">Open Qty</th><th style="padding:7px;border:1px solid #dcd8ce">GP Count</th>
+        <th style="padding:7px;border:1px solid #dcd8ce">Open Qty</th><th style="padding:7px;border:1px solid #dcd8ce">GP Count</th>
+        <th style="padding:7px;border:1px solid #dcd8ce">Qty Total</th><th style="padding:7px;border:1px solid #dcd8ce">Count Total</th>
+      </tr>
+      ${rowHtml}${totalHtml}
+    </table>
+  </div>`;
+}
+
+function ownerAgeingEmailNumberCells_(row, isTotal) {
+  const cellStyle = isTotal
+    ? 'padding:9px;border:1px solid #dcd8ce'
+    : 'padding:9px;border:1px solid #dcd8ce';
+  const aboveStyle = isTotal
+    ? cellStyle
+    : `${cellStyle};color:#d95c43;font-weight:700`;
+  return [
+    `<td style="${cellStyle}">${formatIndianNumber_(row.days0To15Qty)}</td>`,
+    `<td style="${cellStyle}">${formatIndianNumber_(row.days0To15Count)}</td>`,
+    `<td style="${cellStyle}">${formatIndianNumber_(row.days16To30Qty)}</td>`,
+    `<td style="${cellStyle}">${formatIndianNumber_(row.days16To30Count)}</td>`,
+    `<td style="${aboveStyle}">${formatIndianNumber_(row.above30Qty)}</td>`,
+    `<td style="${aboveStyle}">${formatIndianNumber_(row.above30Count)}</td>`,
+    `<td style="${cellStyle};font-weight:700">${formatIndianNumber_(row.totalQty)}</td>`,
+    `<td style="${cellStyle};font-weight:700">${formatIndianNumber_(row.totalCount)}</td>`,
+  ].join('');
+}
+
 function buildReport_(config, timeZone) {
   const message = findLatestReportMessage_(config);
 
@@ -406,7 +493,9 @@ function buildReport_(config, timeZone) {
       statusLabel: 'No matching email',
       reportingDate: '—',
       subject: 'No report found',
+      displayType: config.displayType,
       metrics: emptyConfiguredMetrics_(config.metrics),
+      table: null,
       dashboardUrl: config.dashboardUrlFallback,
       emailUrl: '',
     };
@@ -414,7 +503,14 @@ function buildReport_(config, timeZone) {
 
   const plainBody = normalizeText_(message.getPlainBody());
   const htmlBody = message.getBody();
-  const metrics = parseConfiguredMetrics_(plainBody, config.metrics);
+  const isOwnerAgeingTable =
+    config.displayType === 'OWNER_AGEING_TABLE';
+  const metrics = isOwnerAgeingTable
+    ? []
+    : parseConfiguredMetrics_(plainBody, config.metrics);
+  const table = isOwnerAgeingTable
+    ? parseOwnerAgeingTable_(plainBody)
+    : null;
 
   return {
     id: config.id,
@@ -430,7 +526,9 @@ function buildReport_(config, timeZone) {
     ),
     receivedAt: message.getDate().toISOString(),
     subject: message.getSubject(),
+    displayType: config.displayType,
     metrics,
+    table,
     dashboardUrl:
       extractDashboardUrl_(htmlBody, plainBody) ||
       config.dashboardUrlFallback,
@@ -462,6 +560,69 @@ function findLatestReportMessage_(config) {
 
   matchingMessages.sort((a, b) => b.getDate().getTime() - a.getDate().getTime());
   return matchingMessages[0] || null;
+}
+
+function parseOwnerAgeingTable_(text) {
+  const startMarker =
+    'Open Qty GP Count Open Qty GP Count Open Qty GP Count Qty Total Count Total';
+  const startIndex = text.indexOf(startMarker);
+  const endIndex = text.search(/Critical Ageing Alert/i);
+  const section =
+    startIndex >= 0
+      ? text.slice(
+          startIndex + startMarker.length,
+          endIndex > startIndex ? endIndex : text.length,
+        )
+      : '';
+  const lines = section
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const rows = [];
+  let totals = null;
+  const rowPattern =
+    /^(\d+)\s+(.+?)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)$/;
+  const totalPattern =
+    /^GRAND TOTAL\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)$/i;
+
+  lines.forEach((line) => {
+    const totalMatch = line.match(totalPattern);
+    if (totalMatch) {
+      totals = ownerAgeingValues_('GRAND TOTAL', totalMatch.slice(1));
+      return;
+    }
+
+    const rowMatch = line.match(rowPattern);
+    if (rowMatch) {
+      rows.push({
+        serialNumber: Number(rowMatch[1]),
+        ...ownerAgeingValues_(rowMatch[2], rowMatch.slice(3)),
+      });
+    }
+  });
+
+  return {
+    title: 'Open Gatepass Ageing Summary — By Owner',
+    rows,
+    totals,
+  };
+}
+
+function ownerAgeingValues_(owner, values) {
+  const numbers = values.map((value) =>
+    Number(String(value).replace(/,/g, '')),
+  );
+  return {
+    owner,
+    days0To15Qty: numbers[0] || 0,
+    days0To15Count: numbers[1] || 0,
+    days16To30Qty: numbers[2] || 0,
+    days16To30Count: numbers[3] || 0,
+    above30Qty: numbers[4] || 0,
+    above30Count: numbers[5] || 0,
+    totalQty: numbers[6] || 0,
+    totalCount: numbers[7] || 0,
+  };
 }
 
 function parseConfiguredMetrics_(text, metricConfigs) {
@@ -674,6 +835,10 @@ function normalizeText_(text) {
 
 function includesIgnoreCase_(text, search) {
   return text.toLowerCase().includes(search.toLowerCase());
+}
+
+function formatIndianNumber_(value) {
+  return Number(value || 0).toLocaleString('en-IN');
 }
 
 function stripHtml_(html) {

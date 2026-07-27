@@ -182,6 +182,7 @@ const reportRows = [
     "Gmail Search Query",
     "Subject Contains",
     "Dashboard URL Fallback",
+    "Display Type",
   ],
   [
     true,
@@ -193,6 +194,7 @@ const reportRows = [
     'from:bhavesh.patel@mosaicwellness.in subject:"Daily Cycle count inventory" -in:trash',
     "Daily Cycle count inventory",
     "https://bjpatel90.github.io/Inventory_Visibility/",
+    "METRIC_CARDS",
   ],
   [
     true,
@@ -204,37 +206,54 @@ const reportRows = [
     'from:farhana.teli@mosaicwellness.in subject:"Daily FEFO Violation Check" -in:trash',
     "Daily FEFO Violation Check",
     "https://datastudio.google.com/u/0/reporting/320397c5-8ecd-4e85-b281-36d3694a82e8/page/JaFbF",
+    "METRIC_CARDS",
+  ],
+  [
+    true,
+    3,
+    "open-gatepass-ageing",
+    "Open Gatepass Ageing",
+    "Gatepass ageing",
+    "farhana.teli@mosaicwellness.in",
+    'from:farhana.teli@mosaicwellness.in subject:"Open Gatepass Ageing Report" -in:trash',
+    "Open Gatepass Ageing Report",
+    "",
+    "OWNER_AGEING_TABLE",
   ],
 ];
-reports.getRange(`A1:I${reportRows.length}`).values = reportRows;
+reports.getRange(`A1:J${reportRows.length}`).values = reportRows;
 reports.freezePanes.freezeRows(1);
-reports.getRange("A1:I1").format = {
+reports.getRange("A1:J1").format = {
   fill: colors.green,
   font: { bold: true, color: colors.white },
   horizontalAlignment: "center",
   wrapText: true,
 };
-reports.getRange(`A1:I${reportRows.length}`).format.borders = {
+reports.getRange(`A1:J${reportRows.length}`).format.borders = {
   preset: "all",
   style: "thin",
   color: colors.line,
 };
-reports.getRange(`A2:I${reportRows.length}`).format.wrapText = true;
+reports.getRange(`A2:J${reportRows.length}`).format.wrapText = true;
 reports.getRange("A1:A100").dataValidation = {
   rule: { type: "list", values: [true, false] },
 };
 reports.getRange("B2:B100").dataValidation = {
   rule: { type: "whole", operator: "between", formula1: 1, formula2: 999 },
 };
-reports.getRange("A1:A3").format.columnWidth = 12;
-reports.getRange("B1:B3").format.columnWidth = 12;
-reports.getRange("C1:C3").format.columnWidth = 25;
-reports.getRange("D1:F3").format.columnWidth = 27;
-reports.getRange("G1:G3").format.columnWidth = 62;
-reports.getRange("H1:H3").format.columnWidth = 36;
-reports.getRange("I1:I3").format.columnWidth = 60;
-reports.getRange("A1:I3").format.rowHeight = 42;
-reports.tables.add(`A1:I${reportRows.length}`, true, "ReportsTable");
+reports.getRange("J2:J100").dataValidation = {
+  rule: { type: "list", values: ["METRIC_CARDS", "OWNER_AGEING_TABLE"] },
+};
+reports.getRange("A1:A4").format.columnWidth = 12;
+reports.getRange("B1:B4").format.columnWidth = 12;
+reports.getRange("C1:C4").format.columnWidth = 25;
+reports.getRange("D1:F4").format.columnWidth = 27;
+reports.getRange("G1:G4").format.columnWidth = 62;
+reports.getRange("H1:H4").format.columnWidth = 36;
+reports.getRange("I1:I4").format.columnWidth = 60;
+reports.getRange("J1:J4").format.columnWidth = 28;
+reports.getRange("A1:J4").format.rowHeight = 42;
+reports.tables.add(`A1:J${reportRows.length}`, true, "ReportsTable");
 
 const fieldRows = [
   [

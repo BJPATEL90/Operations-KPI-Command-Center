@@ -40,6 +40,18 @@ Overall FEFO Compliance %
 Overall FEFO Non-Compliance %
 `;
 
+const gatepassBody = `
+Open Gatepass Ageing Summary — By Owner
+Sr No Gatepass Owner 0–15 Days 16–30 Days Above 30 Days Grand Total
+Open Qty GP Count Open Qty GP Count Open Qty GP Count Qty Total Count Total
+1 Sahil 1,92,614 199 6,867 51 13,438 57 2,12,919 307
+2 Shraddha 3,20,782 178 4,737 32 2,889 48 3,28,408 258
+3 Suraj Gupta 3,18,621 152 697 12 1,868 12 3,21,186 176
+4 Unknown 2,619 4 0 1 0 1 2,619 6
+GRAND TOTAL 8,34,636 533 12,301 96 18,195 118 8,65,132 747
+Critical Ageing Alert — Beyond Threshold
+`;
+
 const inventory = context.parseConfiguredMetrics_(inventoryBody, [
   { label: "Last Quarter", searchLabels: ["Last Quarter"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Quarter" },
   { label: "Last Month", searchLabels: ["Last Month"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Month" },
@@ -61,6 +73,12 @@ assert.deepEqual(
   Array.from(fefo, (metric) => metric.value),
   ["12", "21", "79%", "21%"],
 );
+const gatepass = context.parseOwnerAgeingTable_(gatepassBody);
+assert.equal(gatepass.rows.length, 4);
+assert.equal(gatepass.rows[2].owner, "Suraj Gupta");
+assert.equal(gatepass.rows[0].above30Qty, 13438);
+assert.equal(gatepass.totals.totalQty, 865132);
+assert.equal(gatepass.totals.totalCount, 747);
 
 const sheets = {
   Settings: [
@@ -74,9 +92,10 @@ const sheets = {
     ["SCHEDULE_ENABLED", true, ""],
   ],
   Reports: [
-    ["Active", "Sort Order", "Report ID", "Report Name", "Category", "Sender Email", "Gmail Search Query", "Subject Contains", "Dashboard URL Fallback"],
-    [true, 1, "inventory-cycle-count", "Inventory Cycle Count", "Inventory control", "bhavesh.patel@mosaicwellness.in", "inventory query", "Daily Cycle count inventory", "https://example.com/inventory"],
-    [true, 2, "fefo-violations", "FEFO Violations", "Dispatch compliance", "farhana.teli@mosaicwellness.in", "fefo query", "Daily FEFO Violation Check", "https://example.com/fefo"],
+    ["Active", "Sort Order", "Report ID", "Report Name", "Category", "Sender Email", "Gmail Search Query", "Subject Contains", "Dashboard URL Fallback", "Display Type"],
+    [true, 1, "inventory-cycle-count", "Inventory Cycle Count", "Inventory control", "bhavesh.patel@mosaicwellness.in", "inventory query", "Daily Cycle count inventory", "https://example.com/inventory", "METRIC_CARDS"],
+    [true, 2, "fefo-violations", "FEFO Violations", "Dispatch compliance", "farhana.teli@mosaicwellness.in", "fefo query", "Daily FEFO Violation Check", "https://example.com/fefo", "METRIC_CARDS"],
+    [true, 3, "open-gatepass-ageing", "Open Gatepass Ageing", "Gatepass ageing", "farhana.teli@mosaicwellness.in", "gatepass query", "Open Gatepass Ageing Report", "", "OWNER_AGEING_TABLE"],
   ],
   "KPI Fields": [
     ["Active", "Report ID", "Display Order", "KPI Label", "Search Labels", "Value Position", "Tone", "Note Rule", "Note Value"],
@@ -100,8 +119,9 @@ context.SpreadsheetApp = {
 };
 
 const runtime = context.readRuntimeConfiguration_();
-assert.equal(runtime.reports.length, 2);
+assert.equal(runtime.reports.length, 3);
 assert.equal(runtime.reports[0].metrics[0].label, "Last Quarter");
+assert.equal(runtime.reports[2].displayType, "OWNER_AGEING_TABLE");
 assert.deepEqual(Array.from(runtime.allowedEmails), [
   "bhavesh.patel@mosaicwellness.in",
   "shailendra@mosaicwellness.in",

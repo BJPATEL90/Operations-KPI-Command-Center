@@ -161,6 +161,30 @@
         min-height: 30px; color: #8a938f;
         font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
       }
+      .ageing-section { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .ageing-title { margin: 0; padding: 18px 24px; font-size: 15px; font-weight: 750; }
+      .ageing-scroll { overflow-x: auto; }
+      .ageing-table {
+        width: 100%; min-width: 940px; border-collapse: collapse;
+        font-size: 12px; font-variant-numeric: tabular-nums;
+      }
+      .ageing-table th, .ageing-table td {
+        padding: 12px 10px; border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line); text-align: right;
+      }
+      .ageing-table th { font-weight: 750; }
+      .ageing-table .owner { min-width: 142px; text-align: left; font-weight: 750; }
+      .ageing-table .serial { width: 58px; text-align: center; }
+      .ageing-table .group-row th { color: white; text-align: center; }
+      .ageing-table .group-base { background: #203f63; }
+      .ageing-table .group-green { background: #16a05a; }
+      .ageing-table .group-orange { background: #df7d00; }
+      .ageing-table .group-red { background: #e42125; }
+      .ageing-table .subhead th { background: #eef3f6; color: var(--ink); text-align: center; }
+      .ageing-table .above-threshold { color: var(--coral); font-weight: 750; }
+      .ageing-table tbody tr:nth-child(even) { background: #f7f8f8; }
+      .ageing-table .total-row { background: #203f63 !important; color: white; font-weight: 750; }
+      .ageing-empty { padding: 24px; background: #fff0ec; color: var(--coral); }
       .report-foot {
         min-height: 82px; display: flex; align-items: center;
         justify-content: space-between; gap: 20px; padding: 16px 30px;
@@ -346,15 +370,7 @@
                     <span>Reporting date · ${escapeHtml(report.reportingDate)}</span>
                   </div>
                 </header>
-                <div class="metric-grid">
-                  ${(report.metrics || []).map((metric) => `
-                    <div class="metric">
-                      <p>${escapeHtml(metric.label)}</p>
-                      <strong class="${escapeHtml(metric.tone)}">${escapeHtml(metric.value)}</strong>
-                      <span>${escapeHtml(metric.note)}</span>
-                    </div>
-                  `).join('')}
-                </div>
+                ${renderReportBody(report)}
                 <footer class="report-foot">
                   <p class="source" title="${escapeHtml(report.subject)}">
                     Source · ${escapeHtml(report.sender)} · ${escapeHtml(report.subject)}
@@ -368,6 +384,85 @@
             </article>
           `;
         }).join('');
+      }
+
+      function renderReportBody(report) {
+        if (report.displayType === 'OWNER_AGEING_TABLE') {
+          return renderOwnerAgeingTable(report.table);
+        }
+        return `<div class="metric-grid">
+          ${(report.metrics || []).map((metric) => `
+            <div class="metric">
+              <p>${escapeHtml(metric.label)}</p>
+              <strong class="${escapeHtml(metric.tone)}">${escapeHtml(metric.value)}</strong>
+              <span>${escapeHtml(metric.note)}</span>
+            </div>
+          `).join('')}
+        </div>`;
+      }
+
+      function renderOwnerAgeingTable(table) {
+        if (!table || !Array.isArray(table.rows) || !table.rows.length) {
+          return '<div class="ageing-empty">The owner ageing table could not be parsed from the latest email.</div>';
+        }
+        const totalRow = table.totals
+          ? `<tr class="total-row">
+              <td colspan="2" class="owner">GRAND TOTAL</td>
+              ${ageingNumberCells(table.totals, true)}
+            </tr>`
+          : '';
+        return `<section class="ageing-section">
+          <h3 class="ageing-title">Open Gatepass Ageing Summary — By Owner</h3>
+          <div class="ageing-scroll">
+            <table class="ageing-table">
+              <thead>
+                <tr class="group-row">
+                  <th rowspan="2" class="serial group-base">Sr No</th>
+                  <th rowspan="2" class="owner group-base">Gatepass Owner</th>
+                  <th colspan="2" class="group-green">0–15 Days</th>
+                  <th colspan="2" class="group-orange">16–30 Days</th>
+                  <th colspan="2" class="group-red">Above 30 Days</th>
+                  <th colspan="2" class="group-base">Grand Total</th>
+                </tr>
+                <tr class="subhead">
+                  <th>Open Qty</th><th>GP Count</th>
+                  <th>Open Qty</th><th>GP Count</th>
+                  <th>Open Qty</th><th>GP Count</th>
+                  <th>Qty Total</th><th>Count Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${table.rows.map((row) => `
+                  <tr>
+                    <td class="serial">${escapeHtml(row.serialNumber)}</td>
+                    <td class="owner">${escapeHtml(row.owner)}</td>
+                    ${ageingNumberCells(row, false)}
+                  </tr>
+                `).join('')}
+                ${totalRow}
+              </tbody>
+            </table>
+          </div>
+        </section>`;
+      }
+
+      function ageingNumberCells(row, isTotal) {
+        const alertClass = isTotal ? '' : ' class="above-threshold"';
+        return `
+          <td>${formatIndianNumber(row.days0To15Qty)}</td>
+          <td>${formatIndianNumber(row.days0To15Count)}</td>
+          <td>${formatIndianNumber(row.days16To30Qty)}</td>
+          <td>${formatIndianNumber(row.days16To30Count)}</td>
+          <td${alertClass}>${formatIndianNumber(row.above30Qty)}</td>
+          <td${alertClass}>${formatIndianNumber(row.above30Count)}</td>
+          <td><strong>${formatIndianNumber(row.totalQty)}</strong></td>
+          <td><strong>${formatIndianNumber(row.totalCount)}</strong></td>
+        `;
+      }
+
+      function formatIndianNumber(value) {
+        return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })
+          .format(Number(value || 0));
       }
 
       function linkButton(url, label, kind) {
