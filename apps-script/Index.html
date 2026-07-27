@@ -183,7 +183,9 @@
       .ageing-table .subhead th { background: #eef3f6; color: var(--ink); text-align: center; }
       .ageing-table .above-threshold { color: var(--coral); font-weight: 750; }
       .ageing-table tbody tr:nth-child(even) { background: #f7f8f8; }
+      .ageing-table .owner-total-row { background: #fff4cc; font-weight: 750; }
       .ageing-table .total-row { background: #203f63 !important; color: white; font-weight: 750; }
+      .putaway-table { min-width: 860px; }
       .ageing-empty { padding: 24px; background: #fff0ec; color: var(--coral); }
       .report-foot {
         min-height: 82px; display: flex; align-items: center;
@@ -390,6 +392,9 @@
         if (report.displayType === 'OWNER_AGEING_TABLE') {
           return renderOwnerAgeingTable(report.table);
         }
+        if (report.displayType === 'PUTAWAY_TOTALS_TABLE') {
+          return renderPutawayTotalsTable(report.table);
+        }
         return `<div class="metric-grid">
           ${(report.metrics || []).map((metric) => `
             <div class="metric">
@@ -457,6 +462,58 @@
           <td${alertClass}>${formatIndianNumber(row.above30Count)}</td>
           <td><strong>${formatIndianNumber(row.totalQty)}</strong></td>
           <td><strong>${formatIndianNumber(row.totalCount)}</strong></td>
+        `;
+      }
+
+      function renderPutawayTotalsTable(table) {
+        if (!table || !Array.isArray(table.rows) || !table.rows.length) {
+          return '<div class="ageing-empty">The putaway totals table could not be parsed from the latest email.</div>';
+        }
+        const rows = table.rows.concat(table.totals ? [table.totals] : []);
+        return `<section class="ageing-section">
+          <h3 class="ageing-title">Open Putaway Ageing Summary — Requested Totals</h3>
+          <div class="ageing-scroll">
+            <table class="ageing-table putaway-table">
+              <thead>
+                <tr class="group-row">
+                  <th rowspan="2" class="owner group-base">Created By</th>
+                  <th colspan="2" class="group-green">0–3 Days</th>
+                  <th colspan="2" class="group-orange">4–7 Days</th>
+                  <th colspan="2" class="group-red">Above 7 Days</th>
+                  <th colspan="2" class="group-base">Grand Total</th>
+                </tr>
+                <tr class="subhead">
+                  <th>Putaway Count</th><th>Quantity</th>
+                  <th>Putaway Count</th><th>Quantity</th>
+                  <th>Putaway Count</th><th>Quantity</th>
+                  <th>Putaway Count</th><th>Total Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((row) => {
+                  const isTotal = row.owner === 'Grand Total';
+                  return `<tr class="${isTotal ? 'total-row' : 'owner-total-row'}">
+                    <td class="owner">${escapeHtml(row.owner)}</td>
+                    ${putawayNumberCells(row, isTotal)}
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </section>`;
+      }
+
+      function putawayNumberCells(row, isTotal) {
+        const alertClass = isTotal ? '' : ' class="above-threshold"';
+        return `
+          <td>${formatIndianNumber(row.days0To3Count)}</td>
+          <td>${formatIndianNumber(row.days0To3Qty)}</td>
+          <td>${formatIndianNumber(row.days4To7Count)}</td>
+          <td>${formatIndianNumber(row.days4To7Qty)}</td>
+          <td${alertClass}>${formatIndianNumber(row.above7Count)}</td>
+          <td${alertClass}>${formatIndianNumber(row.above7Qty)}</td>
+          <td><strong>${formatIndianNumber(row.totalCount)}</strong></td>
+          <td><strong>${formatIndianNumber(row.totalQty)}</strong></td>
         `;
       }
 

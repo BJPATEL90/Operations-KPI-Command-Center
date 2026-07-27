@@ -337,6 +337,20 @@ function buildKpiEmailText_(data) {
           `GRAND TOTAL: ${formatIndianNumber_(total.totalQty)} open quantity / ${total.totalCount} gatepasses`,
         );
       }
+    } else if (
+      report.displayType === 'PUTAWAY_TOTALS_TABLE' &&
+      report.table
+    ) {
+      report.table.rows
+        .concat(report.table.totals ? [report.table.totals] : [])
+        .forEach((row) => {
+          lines.push(
+            `${row.owner}: 0–3 days ${formatIndianNumber_(row.days0To3Count)} / ${formatIndianNumber_(row.days0To3Qty)} qty | ` +
+              `4–7 days ${formatIndianNumber_(row.days4To7Count)} / ${formatIndianNumber_(row.days4To7Qty)} qty | ` +
+              `Above 7 days ${formatIndianNumber_(row.above7Count)} / ${formatIndianNumber_(row.above7Qty)} qty | ` +
+              `Total ${formatIndianNumber_(row.totalCount)} / ${formatIndianNumber_(row.totalQty)} qty`,
+          );
+        });
     } else {
       report.metrics.forEach((metric) => {
         lines.push(`${metric.label}: ${metric.value}`);
@@ -366,10 +380,12 @@ function buildKpiEmailHtml_(data, isTest) {
     : '';
   const reportSections = data.reports
     .map((report) => {
-      const reportBody =
-        report.displayType === 'OWNER_AGEING_TABLE'
-          ? buildOwnerAgeingEmailTable_(report.table)
-          : buildMetricEmailTable_(report.metrics);
+      let reportBody = buildMetricEmailTable_(report.metrics);
+      if (report.displayType === 'OWNER_AGEING_TABLE') {
+        reportBody = buildOwnerAgeingEmailTable_(report.table);
+      } else if (report.displayType === 'PUTAWAY_TOTALS_TABLE') {
+        reportBody = buildPutawayTotalsEmailTable_(report.table);
+      }
       const dashboardButton = report.dashboardUrl
         ? `<a href="${escapeHtml_(report.dashboardUrl)}" style="display:inline-block;padding:10px 14px;border-radius:7px;background:#1e5c45;color:#fff;font-size:13px;font-weight:700;text-decoration:none">Open dashboard</a>`
         : '';
@@ -480,6 +496,62 @@ function ownerAgeingEmailNumberCells_(row, isTotal) {
   ].join('');
 }
 
+function buildPutawayTotalsEmailTable_(table) {
+  if (!table || !table.rows.length) {
+    return '<div style="padding:14px;background:#fff0ec;color:#d95c43">The putaway totals table could not be parsed from the latest email.</div>';
+  }
+
+  const rows = table.rows.concat(table.totals ? [table.totals] : []);
+  const rowHtml = rows
+    .map((row) => {
+      const isTotal = row.owner === 'Grand Total';
+      const rowStyle = isTotal
+        ? 'background:#203f63;color:#fff;font-weight:700'
+        : 'font-weight:700';
+      return `<tr style="${rowStyle}">
+        <td style="padding:9px;border:1px solid #dcd8ce;text-align:left">${escapeHtml_(row.owner)}</td>
+        ${putawayEmailNumberCells_(row, isTotal)}
+      </tr>`;
+    })
+    .join('');
+
+  return `<div style="overflow-x:auto">
+    <table role="presentation" style="width:100%;min-width:720px;border-collapse:collapse;font-size:11px;text-align:right">
+      <tr style="color:#fff;text-align:center">
+        <th rowspan="2" style="padding:9px;background:#203f63;border:1px solid #dcd8ce;text-align:left">Created By</th>
+        <th colspan="2" style="padding:9px;background:#16a05a;border:1px solid #dcd8ce">0–3 Days</th>
+        <th colspan="2" style="padding:9px;background:#df7d00;border:1px solid #dcd8ce">4–7 Days</th>
+        <th colspan="2" style="padding:9px;background:#e42125;border:1px solid #dcd8ce">Above 7 Days</th>
+        <th colspan="2" style="padding:9px;background:#203f63;border:1px solid #dcd8ce">Grand Total</th>
+      </tr>
+      <tr style="background:#eef3f6;color:#14211c;text-align:center">
+        <th style="padding:7px;border:1px solid #dcd8ce">Putaway Count</th><th style="padding:7px;border:1px solid #dcd8ce">Quantity</th>
+        <th style="padding:7px;border:1px solid #dcd8ce">Putaway Count</th><th style="padding:7px;border:1px solid #dcd8ce">Quantity</th>
+        <th style="padding:7px;border:1px solid #dcd8ce">Putaway Count</th><th style="padding:7px;border:1px solid #dcd8ce">Quantity</th>
+        <th style="padding:7px;border:1px solid #dcd8ce">Putaway Count</th><th style="padding:7px;border:1px solid #dcd8ce">Total Qty</th>
+      </tr>
+      ${rowHtml}
+    </table>
+  </div>`;
+}
+
+function putawayEmailNumberCells_(row, isTotal) {
+  const cellStyle = 'padding:9px;border:1px solid #dcd8ce';
+  const aboveStyle = isTotal
+    ? cellStyle
+    : `${cellStyle};color:#d95c43;font-weight:700`;
+  return [
+    `<td style="${cellStyle}">${formatIndianNumber_(row.days0To3Count)}</td>`,
+    `<td style="${cellStyle}">${formatIndianNumber_(row.days0To3Qty)}</td>`,
+    `<td style="${cellStyle}">${formatIndianNumber_(row.days4To7Count)}</td>`,
+    `<td style="${cellStyle}">${formatIndianNumber_(row.days4To7Qty)}</td>`,
+    `<td style="${aboveStyle}">${formatIndianNumber_(row.above7Count)}</td>`,
+    `<td style="${aboveStyle}">${formatIndianNumber_(row.above7Qty)}</td>`,
+    `<td style="${cellStyle};font-weight:700">${formatIndianNumber_(row.totalCount)}</td>`,
+    `<td style="${cellStyle};font-weight:700">${formatIndianNumber_(row.totalQty)}</td>`,
+  ].join('');
+}
+
 function buildReport_(config, timeZone) {
   const message = findLatestReportMessage_(config);
 
@@ -503,14 +575,19 @@ function buildReport_(config, timeZone) {
 
   const plainBody = normalizeText_(message.getPlainBody());
   const htmlBody = message.getBody();
-  const isOwnerAgeingTable =
-    config.displayType === 'OWNER_AGEING_TABLE';
-  const metrics = isOwnerAgeingTable
+  const isOwnerAgeingTable = config.displayType === 'OWNER_AGEING_TABLE';
+  const isPutawayTotalsTable =
+    config.displayType === 'PUTAWAY_TOTALS_TABLE';
+  const isTable = isOwnerAgeingTable || isPutawayTotalsTable;
+  const metrics = isTable
     ? []
     : parseConfiguredMetrics_(plainBody, config.metrics);
-  const table = isOwnerAgeingTable
-    ? parseOwnerAgeingTable_(plainBody)
-    : null;
+  let table = null;
+  if (isOwnerAgeingTable) {
+    table = parseOwnerAgeingTable_(plainBody);
+  } else if (isPutawayTotalsTable) {
+    table = parsePutawayTotalsTable_(plainBody);
+  }
 
   return {
     id: config.id,
@@ -622,6 +699,70 @@ function ownerAgeingValues_(owner, values) {
     above30Count: numbers[5] || 0,
     totalQty: numbers[6] || 0,
     totalCount: numbers[7] || 0,
+  };
+}
+
+function parsePutawayTotalsTable_(text) {
+  const startMarker = '📦 Created By Remaining Putaway Details';
+  const fallbackMarker = 'Created By Remaining Putaway Details';
+  let startIndex = text.indexOf(startMarker);
+  if (startIndex < 0) startIndex = text.indexOf(fallbackMarker);
+  const section = startIndex >= 0 ? text.slice(startIndex) : text;
+  const requestedOwners = [
+    'Rupesh Total',
+    'Sahil Total',
+    'Shraddha Total',
+    'Suraj Gupta Total',
+  ];
+  const rowsByOwner = {};
+  let totals = null;
+  const rowPattern =
+    /^(Rupesh Total|Sahil Total|Shraddha Total|Suraj Gupta Total|Grand Total)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)$/i;
+
+  section
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .forEach((line) => {
+      const match = line.match(rowPattern);
+      if (!match) return;
+      const matchedOwner = match[1]
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+      if (matchedOwner === 'grand total') {
+        totals = putawayValues_('Grand Total', match.slice(2));
+        return;
+      }
+      const owner = requestedOwners.find(
+        (name) => name.toLowerCase() === matchedOwner,
+      );
+      if (owner) rowsByOwner[owner] = putawayValues_(owner, match.slice(2));
+    });
+
+  return {
+    title: 'Open Putaway Ageing Summary — By Created Owner',
+    rows: requestedOwners
+      .filter((owner) => rowsByOwner[owner])
+      .map((owner) => rowsByOwner[owner]),
+    totals,
+  };
+}
+
+function putawayValues_(owner, values) {
+  const numbers = values.map((value) =>
+    Number(String(value).replace(/,/g, '')),
+  );
+  return {
+    owner,
+    days0To3Count: numbers[0] || 0,
+    days0To3Qty: numbers[1] || 0,
+    days4To7Count: numbers[2] || 0,
+    days4To7Qty: numbers[3] || 0,
+    above7Count: numbers[4] || 0,
+    above7Qty: numbers[5] || 0,
+    totalCount: numbers[6] || 0,
+    totalQty: numbers[7] || 0,
   };
 }
 

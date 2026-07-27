@@ -220,6 +220,18 @@ const reportRows = [
     "",
     "OWNER_AGEING_TABLE",
   ],
+  [
+    true,
+    4,
+    "open-putaway",
+    "Open Putaway",
+    "Putaway ageing",
+    "farhana.teli@mosaicwellness.in",
+    'from:farhana.teli@mosaicwellness.in subject:"Open Putaway Report" -in:trash',
+    "Open Putaway Report",
+    "",
+    "PUTAWAY_TOTALS_TABLE",
+  ],
 ];
 reports.getRange(`A1:J${reportRows.length}`).values = reportRows;
 reports.freezePanes.freezeRows(1);
@@ -242,17 +254,24 @@ reports.getRange("B2:B100").dataValidation = {
   rule: { type: "whole", operator: "between", formula1: 1, formula2: 999 },
 };
 reports.getRange("J2:J100").dataValidation = {
-  rule: { type: "list", values: ["METRIC_CARDS", "OWNER_AGEING_TABLE"] },
+  rule: {
+    type: "list",
+    values: [
+      "METRIC_CARDS",
+      "OWNER_AGEING_TABLE",
+      "PUTAWAY_TOTALS_TABLE",
+    ],
+  },
 };
-reports.getRange("A1:A4").format.columnWidth = 12;
-reports.getRange("B1:B4").format.columnWidth = 12;
-reports.getRange("C1:C4").format.columnWidth = 25;
-reports.getRange("D1:F4").format.columnWidth = 27;
-reports.getRange("G1:G4").format.columnWidth = 62;
-reports.getRange("H1:H4").format.columnWidth = 36;
-reports.getRange("I1:I4").format.columnWidth = 60;
-reports.getRange("J1:J4").format.columnWidth = 28;
-reports.getRange("A1:J4").format.rowHeight = 42;
+reports.getRange("A1:A5").format.columnWidth = 12;
+reports.getRange("B1:B5").format.columnWidth = 12;
+reports.getRange("C1:C5").format.columnWidth = 25;
+reports.getRange("D1:F5").format.columnWidth = 27;
+reports.getRange("G1:G5").format.columnWidth = 62;
+reports.getRange("H1:H5").format.columnWidth = 36;
+reports.getRange("I1:I5").format.columnWidth = 60;
+reports.getRange("J1:J5").format.columnWidth = 28;
+reports.getRange("A1:J5").format.rowHeight = 42;
 reports.tables.add(`A1:J${reportRows.length}`, true, "ReportsTable");
 
 const fieldRows = [

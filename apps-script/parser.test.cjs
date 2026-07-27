@@ -52,6 +52,20 @@ GRAND TOTAL 8,34,636 533 12,301 96 18,195 118 8,65,132 747
 Critical Ageing Alert — Beyond Threshold
 `;
 
+const putawayBody = `
+Created By Remaining Putaway Details
+c/b2b Created By 0-3 days 4-7 days Above 7 days Grand Total
+Putaway Count Quantity Putaway Count Quantity Putaway Count Quantity Putaway Count Total Qty
+Rupesh rtv.warehouse@mosaicwellness.in 0 0 0 0 1 216 1 216
+Rupesh Total 0 0 0 0 1 216 1 216
+Sahil Total 7 250 6 62 17 1175 30 1487
+Shraddha Total 30 3055 25 1451 64 3005 116 7511
+Suraj Gupta Total 21 16720 23 3798 31 7566 74 28084
+Grand Total 58 20025 54 5311 113 11962 220 37298
+Regards,
+Farhana Teli
+`;
+
 const inventory = context.parseConfiguredMetrics_(inventoryBody, [
   { label: "Last Quarter", searchLabels: ["Last Quarter"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Quarter" },
   { label: "Last Month", searchLabels: ["Last Month"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Month" },
@@ -79,6 +93,15 @@ assert.equal(gatepass.rows[2].owner, "Suraj Gupta");
 assert.equal(gatepass.rows[0].above30Qty, 13438);
 assert.equal(gatepass.totals.totalQty, 865132);
 assert.equal(gatepass.totals.totalCount, 747);
+const putaway = context.parsePutawayTotalsTable_(putawayBody);
+assert.deepEqual(
+  Array.from(putaway.rows, (row) => row.owner),
+  ["Rupesh Total", "Sahil Total", "Shraddha Total", "Suraj Gupta Total"],
+);
+assert.equal(putaway.rows[0].above7Qty, 216);
+assert.equal(putaway.rows[3].totalQty, 28084);
+assert.equal(putaway.totals.totalCount, 220);
+assert.equal(putaway.totals.totalQty, 37298);
 
 const sheets = {
   Settings: [
@@ -96,6 +119,7 @@ const sheets = {
     [true, 1, "inventory-cycle-count", "Inventory Cycle Count", "Inventory control", "bhavesh.patel@mosaicwellness.in", "inventory query", "Daily Cycle count inventory", "https://example.com/inventory", "METRIC_CARDS"],
     [true, 2, "fefo-violations", "FEFO Violations", "Dispatch compliance", "farhana.teli@mosaicwellness.in", "fefo query", "Daily FEFO Violation Check", "https://example.com/fefo", "METRIC_CARDS"],
     [true, 3, "open-gatepass-ageing", "Open Gatepass Ageing", "Gatepass ageing", "farhana.teli@mosaicwellness.in", "gatepass query", "Open Gatepass Ageing Report", "", "OWNER_AGEING_TABLE"],
+    [true, 4, "open-putaway", "Open Putaway", "Putaway ageing", "farhana.teli@mosaicwellness.in", "putaway query", "Open Putaway Report", "", "PUTAWAY_TOTALS_TABLE"],
   ],
   "KPI Fields": [
     ["Active", "Report ID", "Display Order", "KPI Label", "Search Labels", "Value Position", "Tone", "Note Rule", "Note Value"],
@@ -119,9 +143,10 @@ context.SpreadsheetApp = {
 };
 
 const runtime = context.readRuntimeConfiguration_();
-assert.equal(runtime.reports.length, 3);
+assert.equal(runtime.reports.length, 4);
 assert.equal(runtime.reports[0].metrics[0].label, "Last Quarter");
 assert.equal(runtime.reports[2].displayType, "OWNER_AGEING_TABLE");
+assert.equal(runtime.reports[3].displayType, "PUTAWAY_TOTALS_TABLE");
 assert.deepEqual(Array.from(runtime.allowedEmails), [
   "bhavesh.patel@mosaicwellness.in",
   "shailendra@mosaicwellness.in",
