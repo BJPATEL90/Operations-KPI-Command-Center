@@ -322,6 +322,7 @@ function buildKpiEmailText_(data) {
 
   data.reports.forEach((report) => {
     lines.push(report.title.toUpperCase());
+    lines.push(sourceFetchedLabel_(report, data.timeZone));
     if (report.displayType === 'OWNER_AGEING_TABLE' && report.table) {
       report.table.rows.forEach((row) => {
         lines.push(
@@ -380,6 +381,10 @@ function buildKpiEmailHtml_(data, isTest) {
     : '';
   const reportSections = data.reports
     .map((report) => {
+      const sourceFetchedLabel = sourceFetchedLabel_(
+        report,
+        data.timeZone,
+      );
       let reportBody = buildMetricEmailTable_(report.metrics);
       if (report.displayType === 'OWNER_AGEING_TABLE') {
         reportBody = buildOwnerAgeingEmailTable_(report.table);
@@ -396,6 +401,7 @@ function buildKpiEmailHtml_(data, isTest) {
       return `<section style="padding:24px 30px;border-bottom:1px solid #dcd8ce">
         <div style="color:#1e5c45;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase">${escapeHtml_(report.category)}</div>
         <h2 style="margin:7px 0 14px;color:#14211c;font-size:21px">${escapeHtml_(report.title)}</h2>
+        <div style="margin:-5px 0 14px;color:#68736e;font-size:11px">${escapeHtml_(sourceFetchedLabel)}</div>
         ${reportBody}
         <div style="margin-top:18px">${dashboardButton}${emailLink}</div>
         <div style="margin-top:12px;color:#8a938f;font-size:10px">Source: ${escapeHtml_(report.subject)}</div>
@@ -417,6 +423,27 @@ function buildKpiEmailHtml_(data, isTest) {
       </footer>
     </div>
   </div>`;
+}
+
+function sourceFetchedLabel_(report, timeZone) {
+  if (!report || !report.receivedAt) {
+    return 'Last fetched data/email date and time unavailable';
+  }
+
+  return (
+    'Last fetched data/email on ' +
+    Utilities.formatDate(
+      new Date(report.receivedAt),
+      timeZone,
+      'dd-MM-yyyy',
+    ) +
+    ' at ' +
+    Utilities.formatDate(
+      new Date(report.receivedAt),
+      timeZone,
+      'hh:mm a',
+    )
+  );
 }
 
 function buildMetricEmailTable_(metrics) {
