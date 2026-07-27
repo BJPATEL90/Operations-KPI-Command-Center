@@ -15,8 +15,10 @@ restricted Mosaic Wellness dashboard.
 - FEFO Violations
 
 The web app reads Gmail in read-only mode, caches parsed KPI values, refreshes
-stale data on page load, and exposes a manual refresh action. Run
-`setupDashboard` once as the owner to install the hourly refresh trigger.
+stale data on page load, and exposes a manual refresh action. It sends the
+consolidated KPI summary daily around 11:00 AM Asia/Kolkata to
+`bhavesh.patel@mosaicwellness.in`. Run `setupDashboard` once as the owner to
+install the hourly data refresh and daily email triggers.
 
 ## Google Apps Script
 

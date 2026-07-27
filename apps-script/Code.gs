@@ -4,6 +4,10 @@ const DASHBOARD_CONFIG = Object.freeze({
   cacheSeconds: 1800,
   staleAfterMinutes: 30,
   ownerEmail: 'bhavesh.patel@mosaicwellness.in',
+  dashboardUrl:
+    'https://script.google.com/macros/s/AKfycby5ih5rzT02m8e254Ulu553JUZV5nm1lx3O1o4-clLAh79fsQIcE7-zGwUra7NgVl_eTA/exec',
+  scheduledEmailHour: 11,
+  scheduledEmailRecipients: ['bhavesh.patel@mosaicwellness.in'],
   allowedEmails: [
     'bhavesh.patel@mosaicwellness.in',
     'shailendra.singh@mosaicwellness.in',
@@ -88,7 +92,11 @@ function setupDashboard() {
   }
 
   ScriptApp.getProjectTriggers()
-    .filter((trigger) => trigger.getHandlerFunction() === 'refreshKpiCache_')
+    .filter((trigger) =>
+      ['refreshKpiCache_', 'sendScheduledKpiEmail_'].includes(
+        trigger.getHandlerFunction(),
+      ),
+    )
     .forEach((trigger) => ScriptApp.deleteTrigger(trigger));
 
   ScriptApp.newTrigger('refreshKpiCache_')
@@ -96,7 +104,27 @@ function setupDashboard() {
     .everyHours(1)
     .create();
 
-  return refreshKpiCache_();
+  ScriptApp.newTrigger('sendScheduledKpiEmail_')
+    .timeBased()
+    .atHour(DASHBOARD_CONFIG.scheduledEmailHour)
+    .nearMinute(0)
+    .everyDays(1)
+    .inTimezone(DASHBOARD_CONFIG.timeZone)
+    .create();
+
+  return {
+    dashboard: refreshKpiCache_(),
+    schedule: `Daily around ${DASHBOARD_CONFIG.scheduledEmailHour}:00 ${DASHBOARD_CONFIG.timeZone}`,
+    recipients: DASHBOARD_CONFIG.scheduledEmailRecipients,
+  };
+}
+
+function sendTestKpiEmail() {
+  const viewerEmail = getViewerEmail_();
+  if (viewerEmail !== DASHBOARD_CONFIG.ownerEmail) {
+    throw new Error('Only the dashboard owner can send a test email.');
+  }
+  return sendKpiEmail_(true);
 }
 
 function refreshKpiCache_() {
@@ -122,6 +150,130 @@ function refreshKpiCache_() {
   );
 
   return result;
+}
+
+function sendScheduledKpiEmail_() {
+  return sendKpiEmail_(false);
+}
+
+function sendKpiEmail_(isTest) {
+  if (MailApp.getRemainingDailyQuota() < 1) {
+    throw new Error('The Apps Script email quota has been reached for today.');
+  }
+
+  const data = refreshKpiCache_();
+  const dateLabel = Utilities.formatDate(
+    new Date(),
+    DASHBOARD_CONFIG.timeZone,
+    'dd MMM yyyy',
+  );
+  const prefix = isTest ? '[TEST] ' : '';
+  const subject = `${prefix}Operations KPI Summary — ${dateLabel}`;
+  const recipients = isTest
+    ? [DASHBOARD_CONFIG.ownerEmail]
+    : DASHBOARD_CONFIG.scheduledEmailRecipients;
+
+  MailApp.sendEmail({
+    to: recipients.join(','),
+    subject,
+    body: buildKpiEmailText_(data),
+    htmlBody: buildKpiEmailHtml_(data, isTest),
+    name: 'Mosaic Operations KPI',
+  });
+
+  return {
+    sent: true,
+    subject,
+    recipients,
+    sentAt: new Date().toISOString(),
+  };
+}
+
+function buildKpiEmailText_(data) {
+  const lines = [
+    'Operations KPI Command Center',
+    `Updated: ${Utilities.formatDate(
+      new Date(data.updatedAt),
+      DASHBOARD_CONFIG.timeZone,
+      'dd MMM yyyy, hh:mm a',
+    )}`,
+    '',
+  ];
+
+  data.reports.forEach((report) => {
+    lines.push(report.title.toUpperCase());
+    report.metrics.forEach((metric) => {
+      lines.push(`${metric.label}: ${metric.value}`);
+    });
+    if (report.dashboardUrl) {
+      lines.push(`Dashboard: ${report.dashboardUrl}`);
+    }
+    if (report.emailUrl) {
+      lines.push(`Source email: ${report.emailUrl}`);
+    }
+    lines.push('');
+  });
+
+  lines.push(`Consolidated dashboard: ${DASHBOARD_CONFIG.dashboardUrl}`);
+  return lines.join('\n');
+}
+
+function buildKpiEmailHtml_(data, isTest) {
+  const updated = Utilities.formatDate(
+    new Date(data.updatedAt),
+    DASHBOARD_CONFIG.timeZone,
+    'dd MMM yyyy, hh:mm a',
+  );
+  const testLabel = isTest
+    ? '<div style="margin-bottom:8px;color:#dfff7a;font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase">Test email</div>'
+    : '';
+  const reportSections = data.reports
+    .map((report) => {
+      const metricCells = report.metrics
+        .map((metric) => {
+          const color =
+            metric.tone === 'warning'
+              ? '#d95c43'
+              : metric.tone === 'positive'
+                ? '#1e5c45'
+                : '#14211c';
+          return `<td style="width:25%;padding:12px;border:1px solid #dcd8ce;vertical-align:top">
+            <div style="min-height:30px;color:#68736e;font-size:11px;line-height:1.3">${escapeHtml_(metric.label)}</div>
+            <strong style="display:block;margin-top:8px;color:${color};font-size:23px">${escapeHtml_(metric.value)}</strong>
+          </td>`;
+        })
+        .join('');
+      const dashboardButton = report.dashboardUrl
+        ? `<a href="${escapeHtml_(report.dashboardUrl)}" style="display:inline-block;padding:10px 14px;border-radius:7px;background:#1e5c45;color:#fff;font-size:13px;font-weight:700;text-decoration:none">Open dashboard</a>`
+        : '';
+      const emailLink = report.emailUrl
+        ? `<a href="${escapeHtml_(report.emailUrl)}" style="margin-left:12px;color:#1e5c45;font-size:13px;font-weight:700">Open source email</a>`
+        : '';
+
+      return `<section style="padding:24px 30px;border-bottom:1px solid #dcd8ce">
+        <div style="color:#1e5c45;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase">${escapeHtml_(report.category)}</div>
+        <h2 style="margin:7px 0 14px;color:#14211c;font-size:21px">${escapeHtml_(report.title)}</h2>
+        <table role="presentation" style="width:100%;border-collapse:collapse"><tr>${metricCells}</tr></table>
+        <div style="margin-top:18px">${dashboardButton}${emailLink}</div>
+        <div style="margin-top:12px;color:#8a938f;font-size:10px">Source: ${escapeHtml_(report.subject)}</div>
+      </section>`;
+    })
+    .join('');
+
+  return `<div style="margin:0;padding:28px;background:#f4f1e9;color:#14211c;font-family:Arial,sans-serif">
+    <div style="max-width:780px;margin:auto;overflow:hidden;border:1px solid #dcd8ce;border-radius:18px;background:#fffdf8">
+      <header style="padding:28px 30px;background:#1e5c45;color:#fff">
+        ${testLabel}
+        <h1 style="margin:0 0 7px;font-size:30px">Operations KPI Summary</h1>
+        <div style="color:#d9e8e1;font-size:12px">Updated ${escapeHtml_(updated)}</div>
+      </header>
+      ${reportSections}
+      <footer style="padding:24px 30px">
+        <a href="${escapeHtml_(DASHBOARD_CONFIG.dashboardUrl)}" style="color:#1e5c45;font-size:14px;font-weight:700">Open consolidated KPI dashboard →</a>
+        <p style="margin:14px 0 0;color:#8a938f;font-size:10px">Gmail links work only when the signed-in viewer has access to the original message.</p>
+      </footer>
+    </div>
+  </div>`;
 }
 
 function buildReport_(config) {
