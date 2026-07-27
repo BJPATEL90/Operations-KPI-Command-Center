@@ -95,6 +95,15 @@ Records: 26
 Yesterday: 0 of 26 records are complete.
 `;
 
+const inwardTatHtml = `
+<table>
+  <tr><th>LAST QUARTER</th><td>29:50</td><td>01 Apr &ndash; 30 Jun 2026</td></tr>
+  <tr><th>LAST MONTH</th><td>28:24</td><td>01 Jun &ndash; 30 Jun 2026</td></tr>
+  <tr><th>MONTH TO DATE</th><td>27:09</td><td>01 Jul &ndash; 27 Jul 2026</td></tr>
+  <tr><th>YESTERDAY</th><td>&mdash;</td><td>27 Jul 2026</td></tr>
+</table>
+`;
+
 const inventory = context.parseConfiguredMetrics_(inventoryBody, [
   { label: "Last Quarter", searchLabels: ["Last Quarter"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Quarter" },
   { label: "Last Month", searchLabels: ["Last Month"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Month" },
@@ -113,6 +122,16 @@ const inwardTat = context.parseConfiguredMetrics_(inwardTatBody, [
   { label: "Month to Date", searchLabels: ["Month to Date", "MTD"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Month to Date" },
   { label: "Yesterday", searchLabels: ["Yesterday"], valuePosition: "AFTER", tone: "warning", noteRule: "DATE_RANGE", noteValue: "Yesterday" },
 ]);
+const inwardTatFromHtml = context.parseBestConfiguredMetrics_(
+  "HTML-only Inward TAT email",
+  inwardTatHtml,
+  [
+    { label: "Last Quarter", searchLabels: ["Last Quarter"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Quarter" },
+    { label: "Last Month", searchLabels: ["Last Month"], valuePosition: "AFTER", tone: "", noteRule: "DATE_RANGE", noteValue: "Last Month" },
+    { label: "Month to Date", searchLabels: ["Month to Date", "MTD"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Month to Date" },
+    { label: "Yesterday", searchLabels: ["Yesterday"], valuePosition: "AFTER", tone: "warning", noteRule: "DATE_RANGE", noteValue: "Yesterday" },
+  ],
+);
 
 assert.deepEqual(
   Array.from(inventory, (metric) => metric.value),
@@ -134,6 +153,10 @@ assert.deepEqual(
     "01 Jul – 27 Jul 2026",
     "27 Jul 2026",
   ],
+);
+assert.deepEqual(
+  Array.from(inwardTatFromHtml, (metric) => metric.value),
+  ["29:50", "28:24", "27:09", "—"],
 );
 const gatepass = context.parseOwnerAgeingTable_(gatepassBody);
 assert.equal(gatepass.rows.length, 4);

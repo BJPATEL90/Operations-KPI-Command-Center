@@ -280,7 +280,7 @@ function refreshKpiCache_(runtimeConfig) {
 }
 
 function buildConfigSignature_(runtimeConfig) {
-  return runtimeConfig.reports
+  const reportSignature = runtimeConfig.reports
     .map((report) => {
       const metricSignature = report.metrics
         .map((metric) =>
@@ -302,6 +302,7 @@ function buildConfigSignature_(runtimeConfig) {
       ].join('|');
     })
     .join('||');
+  return `metric-parser-v2||${reportSignature}`;
 }
 
 function sendScheduledKpiEmail_() {
@@ -641,7 +642,11 @@ function buildReport_(config, timeZone) {
   const isTable = isOwnerAgeingTable || isPutawayTotalsTable;
   const metrics = isTable
     ? []
-    : parseConfiguredMetrics_(plainBody, config.metrics);
+    : parseBestConfiguredMetrics_(
+        plainBody,
+        htmlBody,
+        config.metrics,
+      );
   let table = null;
   if (isOwnerAgeingTable) {
     table = parseOwnerAgeingTable_(plainBody);
@@ -854,6 +859,40 @@ function parseConfiguredMetrics_(text, metricConfigs) {
 
     return metric_(config.label, value, note, config.tone);
   });
+}
+
+function parseBestConfiguredMetrics_(plainBody, htmlBody, metricConfigs) {
+  const plainMetrics = parseConfiguredMetrics_(plainBody, metricConfigs);
+  const htmlText = htmlToStructuredText_(htmlBody);
+  if (!htmlText) return plainMetrics;
+
+  const htmlMetrics = parseConfiguredMetrics_(htmlText, metricConfigs);
+  const plainScore = countParsedMetricValues_(plainMetrics);
+  const htmlScore = countParsedMetricValues_(htmlMetrics);
+  return htmlScore > plainScore ? htmlMetrics : plainMetrics;
+}
+
+function countParsedMetricValues_(metrics) {
+  return metrics.filter(
+    (metric) => metric.value && metric.value !== '—',
+  ).length;
+}
+
+function htmlToStructuredText_(html) {
+  return normalizeText_(
+    decodeHtmlEntities_(
+      String(html || '')
+        .replace(
+          /<(?:br|hr)\b[^>]*\/?>/gi,
+          '\n',
+        )
+        .replace(
+          /<\/(?:div|p|section|article|header|footer|h[1-6]|tr|td|th|li)>/gi,
+          '\n',
+        )
+        .replace(/<[^>]*>/g, ' '),
+    ),
+  );
 }
 
 function emptyConfiguredMetrics_(metricConfigs) {
@@ -1070,6 +1109,7 @@ function isStale_(isoDate, staleAfterMinutes) {
 function normalizeText_(text) {
   return String(text || '')
     .replace(/\u00a0/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/\r\n?/g, '\n')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
@@ -1093,8 +1133,11 @@ function stripHtml_(html) {
 function decodeHtmlEntities_(value) {
   return String(value || '')
     .replace(/&amp;/gi, '&')
+    .replace(/&nbsp;/gi, ' ')
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
+    .replace(/&ndash;|&#8211;|&#x2013;/gi, '–')
+    .replace(/&mdash;|&#8212;|&#x2014;/gi, '—')
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>');
 }
