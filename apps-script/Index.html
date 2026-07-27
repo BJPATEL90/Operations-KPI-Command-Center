@@ -102,13 +102,18 @@
         font: 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
         letter-spacing: .1em; text-transform: uppercase;
       }
-      .nav a {
+      .nav button {
         flex: none; padding: 9px 14px; border: 1px solid var(--line);
         border-radius: 999px; background: rgba(255,255,255,.45);
-        font-size: 13px; font-weight: 700; text-decoration: none;
+        color: var(--ink); font-size: 13px; font-weight: 700;
       }
-      .nav a:hover { border-color: var(--green); background: white; }
+      .nav button:hover { border-color: var(--green); background: white; }
+      .nav button.active {
+        border-color: var(--green); background: var(--green); color: white;
+        box-shadow: 0 5px 14px rgba(30,92,69,.16);
+      }
       .reports { display: grid; gap: 24px; padding: 32px 0 56px; }
+      .report[hidden] { display: none; }
       .report {
         scroll-margin-top: 24px; display: grid; grid-template-columns: 76px 1fr;
         overflow: hidden; border: 1px solid var(--line); border-radius: 22px;
@@ -315,6 +320,7 @@
       const navEl = document.getElementById('report-nav');
       const noticeEl = document.getElementById('notice');
       const refreshButton = document.getElementById('refresh-button');
+      let activeReportId = '';
 
       function escapeHtml(value) {
         return String(value ?? '')
@@ -349,7 +355,7 @@
         navEl.innerHTML = [
           '<span class="nav-label">Reports</span>',
           ...reports.map((report) =>
-            `<a href="#${escapeHtml(report.id)}">${escapeHtml(report.title)}</a>`
+            `<button type="button" data-report-id="${escapeHtml(report.id)}" role="tab">${escapeHtml(report.title)}</button>`
           ),
         ].join('');
 
@@ -359,7 +365,7 @@
           const statusClass = report.status === 'ready' ? '' : ' missing';
 
           return `
-            <article class="report" id="${escapeHtml(report.id)}">
+            <article class="report" id="${escapeHtml(report.id)}" data-report-panel="${escapeHtml(report.id)}" role="tabpanel">
               <div class="index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</div>
               <div class="report-content">
                 <header class="report-head">
@@ -386,6 +392,38 @@
             </article>
           `;
         }).join('');
+
+        const requestedId = decodeURIComponent(location.hash.replace(/^#/, ''));
+        const availableIds = reports.map((report) => report.id);
+        if (!availableIds.includes(activeReportId)) {
+          activeReportId = availableIds.includes(requestedId)
+            ? requestedId
+            : availableIds[0] || '';
+        }
+        selectReport(activeReportId, false);
+
+        navEl.querySelectorAll('[data-report-id]').forEach((button) => {
+          button.addEventListener('click', () => {
+            selectReport(button.dataset.reportId, true);
+          });
+        });
+      }
+
+      function selectReport(reportId, updateHash) {
+        if (!reportId) return;
+        activeReportId = reportId;
+        navEl.querySelectorAll('[data-report-id]').forEach((button) => {
+          const isActive = button.dataset.reportId === reportId;
+          button.classList.toggle('active', isActive);
+          button.setAttribute('aria-selected', String(isActive));
+          button.tabIndex = isActive ? 0 : -1;
+        });
+        reportsEl.querySelectorAll('[data-report-panel]').forEach((panel) => {
+          panel.hidden = panel.dataset.reportPanel !== reportId;
+        });
+        if (updateHash) {
+          history.replaceState(null, '', `#${encodeURIComponent(reportId)}`);
+        }
       }
 
       function renderReportBody(report) {
