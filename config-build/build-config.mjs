@@ -143,7 +143,7 @@ const settingsRows = [
   ],
   [
     "DASHBOARD_URL",
-    "https://bjpatel90.github.io/Operations-KPI-Command-Center/",
+    "https://bjpatel90.github.io/Operations-KPI-Command-Center/docs/",
     "Published consolidated dashboard URL",
   ],
   ["SCHEDULE_ENABLED", true, "TRUE sends the consolidated KPI email daily"],
