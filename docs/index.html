@@ -666,11 +666,8 @@
       }
 
       async function loadDashboardFromGitHub(forceRefresh) {
-        const functionName = forceRefresh
-          ? 'refreshDashboardData'
-          : 'getDashboardData';
         try {
-          render(await runAppsScriptFunction(functionName));
+          render(await runAppsScriptFunction('getSharedDashboardData'));
         } catch (error) {
           if (error.status === 401) {
             googleAccessToken = '';

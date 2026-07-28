@@ -1,6 +1,7 @@
 const DASHBOARD_CONFIG = Object.freeze({
   configSpreadsheetId: '1irCr4_VwE9kG3hSSER_LjkieP0UMgTx7HBbdsB3kB0U',
   cacheKey: 'MOSAIC_KPI_DASHBOARD_V1',
+  allowedUsersCacheKey: 'MOSAIC_KPI_ALLOWED_USERS_V1',
   ownerEmail: 'bhavesh.patel@mosaicwellness.in',
   fallbackTimeZone: 'Asia/Kolkata',
   fallbackCacheMinutes: 30,
@@ -186,6 +187,42 @@ function getDashboardData() {
   return refreshKpiCache_(runtimeConfig);
 }
 
+function getSharedDashboardData() {
+  const properties = PropertiesService.getScriptProperties();
+  const allowedUsersJson = properties.getProperty(
+    DASHBOARD_CONFIG.allowedUsersCacheKey,
+  );
+  const allowedEmails = allowedUsersJson ? JSON.parse(allowedUsersJson) : [];
+  const viewerEmail = getViewerEmail_();
+
+  if (
+    !viewerEmail ||
+    !allowedEmails.includes(viewerEmail.toLowerCase())
+  ) {
+    throw new Error(
+      allowedUsersJson
+        ? 'Access denied. Sign in with an approved Mosaic Wellness account.'
+        : 'Shared access is not ready. Ask the dashboard owner to refresh the source data once.',
+    );
+  }
+
+  const stored = properties.getProperty(DASHBOARD_CONFIG.cacheKey);
+
+  if (!stored) {
+    throw new Error(
+      'Shared KPI data is not ready. Ask the dashboard owner to refresh the source data.',
+    );
+  }
+
+  const data = JSON.parse(stored);
+  data.viewerEmail = viewerEmail;
+  data.configurationUrl =
+    data.viewerEmail === DASHBOARD_CONFIG.ownerEmail
+      ? data.configurationUrl
+      : '';
+  return data;
+}
+
 function refreshDashboardData() {
   const runtimeConfig = readRuntimeConfiguration_();
   assertAllowedViewer_(runtimeConfig);
@@ -266,10 +303,12 @@ function refreshKpiCache_(runtimeConfig) {
   };
   const serialized = JSON.stringify(result);
 
-  PropertiesService.getScriptProperties().setProperty(
-    DASHBOARD_CONFIG.cacheKey,
-    serialized,
-  );
+  PropertiesService.getScriptProperties().setProperties({
+    [DASHBOARD_CONFIG.cacheKey]: serialized,
+    [DASHBOARD_CONFIG.allowedUsersCacheKey]: JSON.stringify(
+      config.allowedEmails,
+    ),
+  });
   CacheService.getScriptCache().put(
     DASHBOARD_CONFIG.cacheKey,
     serialized,
