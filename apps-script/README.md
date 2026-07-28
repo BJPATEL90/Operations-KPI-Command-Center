@@ -36,3 +36,15 @@ Use `sendTestKpiEmail` to send a test summary only to
 
 The scheduled summary is sent around 11:00 AM Asia/Kolkata to the recipients
 listed under `EMAIL_RECIPIENTS` in the Settings tab.
+
+## GitHub OAuth connection
+
+The native GitHub Pages dashboard uses OAuth Client ID
+`1021762366002-vo41asis58ss3qtt5j8tnkloujf1t73f.apps.googleusercontent.com`
+and calls this script's API executable.
+
+Connect this Apps Script project to standard Google Cloud project number
+`1021762366002` under **Project Settings → Google Cloud Platform (GCP)
+Project**, and enable the **Google Apps Script API** in that Cloud project.
+The OAuth web client must allow `https://bjpatel90.github.io` as an authorized
+JavaScript origin.

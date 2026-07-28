@@ -15,6 +15,6 @@
     "executeAs": "USER_DEPLOYING"
   },
   "executionApi": {
-    "access": "MYSELF"
+    "access": "DOMAIN"
   }
 }

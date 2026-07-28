@@ -3,6 +3,10 @@
   <head>
     <base target="_top">
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>Operations KPI Command Center</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
       :root {
         --ink: #14211c;
@@ -62,6 +66,14 @@
       }
       .refresh:hover { border-color: var(--green); background: white; }
       .refresh:disabled { cursor: wait; opacity: .6; }
+      .refresh[hidden] { display: none; }
+      .auth {
+        min-height: 38px; padding: 0 14px; border: 1px solid var(--green);
+        border-radius: 9px; background: var(--green); color: white;
+        font-size: 12px; font-weight: 700;
+      }
+      .auth:hover { background: #164b38; }
+      .auth[hidden] { display: none; }
       .hero {
         display: grid; grid-template-columns: 1fr auto; align-items: end;
         gap: 48px; padding: 76px 0 62px;
@@ -281,6 +293,9 @@
             <span class="dot" aria-hidden="true"></span>
             <span id="updated-at">Loading latest reports…</span>
           </div>
+          <button class="auth" id="auth-button" type="button" hidden>
+            Sign in with Google
+          </button>
           <button class="refresh" id="refresh-button" type="button">Refresh data</button>
         </div>
       </header>
@@ -320,7 +335,25 @@
       const navEl = document.getElementById('report-nav');
       const noticeEl = document.getElementById('notice');
       const refreshButton = document.getElementById('refresh-button');
+      const authButton = document.getElementById('auth-button');
+      const GOOGLE_OAUTH_CLIENT_ID =
+        '1021762366002-vo41asis58ss3qtt5j8tnkloujf1t73f.apps.googleusercontent.com';
+      const APPS_SCRIPT_DEPLOYMENT_ID =
+        'AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm';
+      const GOOGLE_OAUTH_SCOPES = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/script.scriptapp',
+        'https://www.googleapis.com/auth/script.send_mail',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ].join(' ');
+      const isAppsScriptRuntime =
+        typeof google !== 'undefined' &&
+        google.script &&
+        google.script.run;
       let activeReportId = '';
+      let googleTokenClient = null;
+      let googleAccessToken = '';
 
       function escapeHtml(value) {
         return String(value ?? '')
@@ -595,35 +628,142 @@
           '<div class="loader"><span>Unable to load reports. Use Refresh data to try again.</span></div>';
       }
 
+      function setLoadingState(isLoading, forceRefresh = false) {
+        refreshButton.disabled = isLoading;
+        refreshButton.textContent = isLoading
+          ? (forceRefresh ? 'Refreshing…' : 'Loading…')
+          : 'Refresh data';
+      }
+
+      async function runAppsScriptFunction(functionName) {
+        const response = await fetch(
+          `https://script.googleapis.com/v1/scripts/${APPS_SCRIPT_DEPLOYMENT_ID}:run`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${googleAccessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              function: functionName,
+              parameters: [],
+              devMode: false,
+            }),
+          },
+        );
+        const payload = await response.json();
+        if (!response.ok || payload.error) {
+          const detail = payload?.error?.details?.[0]?.errorMessage;
+          const error = new Error(
+            detail ||
+              payload?.error?.message ||
+              'Google could not load the KPI dashboard.',
+          );
+          error.status = response.status;
+          throw error;
+        }
+        return payload?.response?.result;
+      }
+
+      async function loadDashboardFromGitHub(forceRefresh) {
+        const functionName = forceRefresh
+          ? 'refreshDashboardData'
+          : 'getDashboardData';
+        try {
+          render(await runAppsScriptFunction(functionName));
+        } catch (error) {
+          if (error.status === 401) {
+            googleAccessToken = '';
+            authButton.textContent = 'Sign in with Google';
+            authButton.hidden = false;
+            refreshButton.hidden = true;
+          }
+          throw error;
+        }
+      }
+
       function loadDashboard(forceRefresh = false) {
-        refreshButton.disabled = true;
-        refreshButton.textContent = forceRefresh ? 'Refreshing…' : 'Loading…';
+        if (!isAppsScriptRuntime && !googleAccessToken) {
+          showError('Sign in with your approved Mosaic Wellness Google account.');
+          return;
+        }
+
+        setLoadingState(true, forceRefresh);
         noticeEl.classList.remove('show');
+
+        if (!isAppsScriptRuntime) {
+          loadDashboardFromGitHub(forceRefresh)
+            .catch(showError)
+            .finally(() => setLoadingState(false));
+          return;
+        }
 
         const runner = google.script.run
           .withSuccessHandler((data) => {
             render(data);
-            refreshButton.disabled = false;
-            refreshButton.textContent = 'Refresh data';
+            setLoadingState(false);
           })
           .withFailureHandler((error) => {
             showError(error);
-            refreshButton.disabled = false;
-            refreshButton.textContent = 'Refresh data';
+            setLoadingState(false);
           });
 
         if (forceRefresh) runner.refreshDashboardData();
         else runner.getDashboardData();
       }
 
+      function initializeGoogleOAuth() {
+        refreshButton.hidden = true;
+        authButton.hidden = false;
+        document.getElementById('updated-at').textContent =
+          'Sign in to load the latest reports';
+        reportsEl.innerHTML =
+          '<div class="loader"><span>Google sign-in is required to read KPI reports.</span></div>';
+
+        if (!window.google?.accounts?.oauth2) {
+          showError('Google sign-in could not load. Refresh the page and try again.');
+          return;
+        }
+
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_OAUTH_CLIENT_ID,
+          scope: GOOGLE_OAUTH_SCOPES,
+          callback: (tokenResponse) => {
+            if (tokenResponse.error) {
+              showError(tokenResponse.error_description || tokenResponse.error);
+              return;
+            }
+            googleAccessToken = tokenResponse.access_token;
+            authButton.textContent = 'Switch account';
+            refreshButton.hidden = false;
+            loadDashboard(false);
+          },
+          error_callback: (error) => {
+            showError(error?.message || 'Google sign-in was cancelled.');
+          },
+        });
+      }
+
+      function requestGoogleAccess() {
+        if (!googleTokenClient) initializeGoogleOAuth();
+        googleTokenClient?.requestAccessToken({
+          prompt: googleAccessToken ? 'select_account' : 'consent',
+        });
+      }
+
       refreshButton.addEventListener('click', () => loadDashboard(true));
+      authButton.addEventListener('click', requestGoogleAccess);
       if (window.parent !== window) {
         window.parent.postMessage(
           { type: 'operations-kpi-dashboard-ready' },
           'https://bjpatel90.github.io',
         );
       }
-      loadDashboard(false);
+      if (isAppsScriptRuntime) {
+        loadDashboard(false);
+      } else {
+        window.addEventListener('load', initializeGoogleOAuth);
+      }
     </script>
   </body>
 </html>

@@ -1,202 +1,769 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f5f1e8" />
-    <meta
-      name="description"
-      content="Mosaic Wellness Operations KPI Command Center"
-    />
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>Operations KPI Command Center</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
       :root {
-        color-scheme: light;
-        font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", sans-serif;
-        background: #f5f1e8;
-        color: #10231c;
+        --ink: #14211c;
+        --muted: #68736e;
+        --paper: #f4f1e9;
+        --card: #fffdf8;
+        --line: #dcd8ce;
+        --green: #1e5c45;
+        --lime: #dfff7a;
+        --coral: #d95c43;
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
       body {
-        width: 100%;
-        min-height: 100%;
         margin: 0;
+        background:
+          radial-gradient(circle at 80% 0%, rgba(223, 255, 122, .2), transparent 28rem),
+          var(--paper);
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
       }
-
-      body {
-        overflow: hidden;
+      button, a { font: inherit; }
+      button { cursor: pointer; }
+      a { color: inherit; }
+      .shell { width: min(1220px, calc(100% - 48px)); margin: 0 auto; }
+      .masthead {
+        min-height: 94px; display: flex; align-items: center;
+        justify-content: space-between; border-bottom: 1px solid var(--line);
       }
-
-      .shell {
-        position: fixed;
-        inset: 0;
-        display: grid;
-        grid-template-rows: 46px 1fr;
-        background: #f5f1e8;
+      .brand { display: flex; align-items: center; gap: 14px; }
+      .mark {
+        width: 44px; height: 44px; display: grid; place-items: center;
+        border-radius: 50%; background: var(--green); color: white;
+        font: 700 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: .08em;
       }
-
-      .bar {
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 0 18px;
-        border-bottom: 1px solid #d9d2c4;
-        background: #fffdf8;
-        font-size: 13px;
+      .eyebrow, .brand-name, .kicker, .category, .metric p, .metric span,
+      .source, .footer p { margin: 0; }
+      .eyebrow, .kicker, .category {
+        color: var(--green);
+        font: 700 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: .12em; text-transform: uppercase;
       }
-
-      .brand {
-        overflow: hidden;
-        font-weight: 700;
-        letter-spacing: -0.01em;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      .brand-name { margin-top: 3px; font-size: 15px; font-weight: 700; }
+      .toolbar { display: flex; align-items: center; gap: 14px; }
+      .updated {
+        display: flex; align-items: center; gap: 8px; color: var(--muted);
+        font: 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
       }
-
-      .secure-link {
-        flex: none;
-        color: #176348;
-        font-weight: 700;
-        text-decoration: none;
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #4b9a70;
+        box-shadow: 0 0 0 4px rgba(75,154,112,.13); }
+      .refresh {
+        min-height: 38px; padding: 0 14px; border: 1px solid var(--line);
+        border-radius: 9px; background: rgba(255,255,255,.55); color: var(--green);
+        font-size: 12px; font-weight: 700;
       }
-
-      .secure-link:hover,
-      .secure-link:focus-visible {
-        text-decoration: underline;
+      .refresh:hover { border-color: var(--green); background: white; }
+      .refresh:disabled { cursor: wait; opacity: .6; }
+      .refresh[hidden] { display: none; }
+      .auth {
+        min-height: 38px; padding: 0 14px; border: 1px solid var(--green);
+        border-radius: 9px; background: var(--green); color: white;
+        font-size: 12px; font-weight: 700;
       }
-
-      iframe {
-        width: 100%;
-        height: 100%;
-        border: 0;
-        background: #f5f1e8;
-        opacity: 0;
-        transition: opacity 180ms ease;
+      .auth:hover { background: #164b38; }
+      .auth[hidden] { display: none; }
+      .hero {
+        display: grid; grid-template-columns: 1fr auto; align-items: end;
+        gap: 48px; padding: 76px 0 62px;
       }
-
-      iframe.ready {
-        opacity: 1;
+      h1 {
+        max-width: 840px; margin: 14px 0 20px;
+        font-size: clamp(42px, 7vw, 88px); font-weight: 650;
+        letter-spacing: -.065em; line-height: .94;
       }
-
-      .loading {
-        position: absolute;
-        inset: 46px 0 0;
-        z-index: 1;
-        display: grid;
-        place-items: center;
-        padding: 24px;
-        background: #f5f1e8;
+      .hero-copy {
+        max-width: 700px; margin: 0; color: var(--muted);
+        font-size: clamp(17px, 2vw, 21px); line-height: 1.5;
+      }
+      .summary {
+        width: 146px; height: 146px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; border-radius: 50%;
+        background: var(--lime); transform: rotate(3deg);
+      }
+      .summary strong { font-size: 54px; letter-spacing: -.06em; line-height: .9; }
+      .summary span {
+        margin-top: 10px;
+        font: 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: .08em; text-transform: uppercase;
+      }
+      .notice {
+        display: none; margin: 0 0 24px; padding: 15px 18px;
+        border: 1px solid #e6c0b7; border-radius: 10px;
+        background: #fff7f4; color: #8a3324; font-size: 13px; line-height: 1.5;
+      }
+      .notice.show { display: block; }
+      .nav {
+        display: flex; align-items: center; gap: 10px; padding: 16px 0;
+        border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+        overflow-x: auto;
+      }
+      .nav-label {
+        margin-right: 4px; color: var(--muted);
+        font: 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: .1em; text-transform: uppercase;
+      }
+      .nav button {
+        flex: none; padding: 9px 14px; border: 1px solid var(--line);
+        border-radius: 999px; background: rgba(255,255,255,.45);
+        color: var(--ink); font-size: 13px; font-weight: 700;
+      }
+      .nav button:hover { border-color: var(--green); background: white; }
+      .nav button.active {
+        border-color: var(--green); background: var(--green); color: white;
+        box-shadow: 0 5px 14px rgba(30,92,69,.16);
+      }
+      .reports { display: grid; gap: 24px; padding: 32px 0 56px; }
+      .report[hidden] { display: none; }
+      .report {
+        scroll-margin-top: 24px; display: grid; grid-template-columns: 76px 1fr;
+        overflow: hidden; border: 1px solid var(--line); border-radius: 22px;
+        background: var(--card); box-shadow: 0 12px 34px rgba(42,52,46,.06);
+      }
+      .index {
+        padding-top: 28px; border-right: 1px solid var(--line); color: var(--muted);
+        font: 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
         text-align: center;
       }
-
-      .loading[hidden] {
-        display: none;
+      .report-content { min-width: 0; }
+      .report-head {
+        display: flex; align-items: flex-start; justify-content: space-between;
+        gap: 24px; padding: 28px 30px 25px;
       }
-
-      .loading strong {
-        display: block;
-        margin-bottom: 8px;
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: clamp(24px, 4vw, 38px);
-        font-weight: 500;
+      h2 {
+        margin: 8px 0 0; font-size: clamp(28px, 4vw, 42px);
+        font-weight: 650; letter-spacing: -.045em;
       }
-
-      .loading span {
-        color: #66716c;
-        font-size: 14px;
+      .meta {
+        display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+        color: var(--muted);
+        font: 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
       }
-
-      .loading a {
-        display: none;
-        width: fit-content;
-        margin: 20px auto 0;
-        padding: 12px 18px;
-        border-radius: 8px;
-        background: #176348;
-        color: #fff;
-        font-size: 14px;
-        font-weight: 700;
-        text-decoration: none;
+      .fresh {
+        padding: 6px 9px; border-radius: 999px; background: #e6f2eb;
+        color: var(--green); font-weight: 700;
       }
-
-      .loading.sign-in a {
-        display: block;
+      .fresh.missing { background: #fff0ec; color: var(--coral); }
+      .metric-grid {
+        display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+        border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
       }
+      .metric {
+        min-height: 156px; display: flex; flex-direction: column;
+        justify-content: space-between; padding: 24px;
+      }
+      .metric + .metric { border-left: 1px solid var(--line); }
+      .metric p {
+        min-height: 34px; color: var(--muted); font-size: 13px;
+        font-weight: 700; line-height: 1.25;
+      }
+      .metric strong {
+        margin: 13px 0 12px; font-size: clamp(34px, 4vw, 49px);
+        font-weight: 680; letter-spacing: -.05em;
+      }
+      .metric strong.positive { color: var(--green); }
+      .metric strong.warning { color: var(--coral); }
+      .metric span {
+        min-height: 30px; color: #8a938f;
+        font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      .ageing-section { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .ageing-title { margin: 0; padding: 18px 24px; font-size: 15px; font-weight: 750; }
+      .ageing-scroll { overflow-x: auto; }
+      .ageing-table {
+        width: 100%; min-width: 940px; border-collapse: collapse;
+        font-size: 12px; font-variant-numeric: tabular-nums;
+      }
+      .ageing-table th, .ageing-table td {
+        padding: 12px 10px; border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line); text-align: right;
+      }
+      .ageing-table th { font-weight: 750; }
+      .ageing-table .owner { min-width: 142px; text-align: left; font-weight: 750; }
+      .ageing-table .serial { width: 58px; text-align: center; }
+      .ageing-table .group-row th { color: white; text-align: center; }
+      .ageing-table .group-base { background: #203f63; }
+      .ageing-table .group-green { background: #16a05a; }
+      .ageing-table .group-orange { background: #df7d00; }
+      .ageing-table .group-red { background: #e42125; }
+      .ageing-table .subhead th { background: #eef3f6; color: var(--ink); text-align: center; }
+      .ageing-table .above-threshold { color: var(--coral); font-weight: 750; }
+      .ageing-table tbody tr:nth-child(even) { background: #f7f8f8; }
+      .ageing-table .owner-total-row { background: #fff4cc; font-weight: 750; }
+      .ageing-table .total-row { background: #203f63 !important; color: white; font-weight: 750; }
+      .putaway-table { min-width: 860px; }
+      .ageing-empty { padding: 24px; background: #fff0ec; color: var(--coral); }
+      .report-foot {
+        min-height: 82px; display: flex; align-items: center;
+        justify-content: space-between; gap: 20px; padding: 16px 30px;
+      }
+      .source {
+        max-width: 390px; overflow: hidden; color: var(--muted);
+        font: 11px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+        text-overflow: ellipsis; white-space: nowrap;
+      }
+      .actions { display: flex; gap: 10px; }
+      .button {
+        min-height: 44px; display: inline-flex; align-items: center;
+        justify-content: center; gap: 12px; padding: 0 17px;
+        border: 1px solid var(--green); border-radius: 9px;
+        font-size: 13px; font-weight: 700; text-decoration: none;
+        transition: transform 150ms ease, box-shadow 150ms ease;
+      }
+      .button:hover { transform: translateY(-2px); box-shadow: 0 7px 18px rgba(30,92,69,.15); }
+      .primary { background: var(--green); color: white; }
+      .secondary { background: transparent; color: var(--green); }
+      .disabled { pointer-events: none; border-color: var(--line); color: #8a938f; background: #eeeae1; }
+      .loader {
+        min-height: 330px; display: grid; place-items: center; color: var(--muted);
+        border: 1px solid var(--line); border-radius: 22px; background: var(--card);
+      }
+      .loader span { animation: pulse 1.2s ease-in-out infinite; }
+      @keyframes pulse { 50% { opacity: .35; } }
+      .footer {
+        min-height: 104px; display: flex; align-items: center;
+        justify-content: space-between; border-top: 1px solid var(--line);
+        color: var(--muted); font-size: 13px;
+      }
+      .footer a { color: var(--green); font-weight: 700; text-decoration: none; }
+      .footer-links { display: flex; align-items: center; gap: 18px; }
+      #configuration-link { display: none; }
+      :focus-visible { outline: 3px solid rgba(30,92,69,.35); outline-offset: 3px; }
 
-      @media (max-width: 640px) {
-        .shell {
-          grid-template-rows: 42px 1fr;
+      @media (max-width: 900px) {
+        .summary { width: 112px; height: 112px; }
+        .summary strong { font-size: 42px; }
+        .metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        .metric:nth-child(3) { border-left: 0; }
+        .metric:nth-child(n+3) { border-top: 1px solid var(--line); }
+      }
+      @media (max-width: 650px) {
+        .shell { width: min(100% - 28px, 1220px); }
+        .masthead { min-height: 82px; }
+        .mark { width: 38px; height: 38px; }
+        .eyebrow, .updated { display: none; }
+        .hero { grid-template-columns: 1fr; gap: 28px; padding: 52px 0 42px; }
+        .summary {
+          width: auto; height: auto; flex-direction: row; justify-content: flex-start;
+          gap: 8px; padding: 14px 18px; border-radius: 12px; transform: none;
         }
-
-        .bar {
-          padding: 0 12px;
-          font-size: 12px;
-        }
-
-        .loading {
-          inset-block-start: 42px;
-        }
+        .summary strong { font-size: 22px; }
+        .summary span { margin: 0; }
+        .report { grid-template-columns: 1fr; }
+        .index { display: none; }
+        .report-head, .report-foot { align-items: flex-start; flex-direction: column; }
+        .meta { align-items: flex-start; }
+        .metric-grid { grid-template-columns: 1fr; }
+        .metric { min-height: 136px; }
+        .metric + .metric { border-top: 1px solid var(--line); border-left: 0; }
+        .actions { width: 100%; flex-direction: column; }
+        .button { width: 100%; }
+        .footer { align-items: flex-start; flex-direction: column; justify-content: center; gap: 10px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .button { transition: none; }
+        .loader span { animation: none; }
       }
     </style>
   </head>
   <body>
     <main class="shell">
-      <header class="bar">
-        <span class="brand">Mosaic Wellness · Operations KPI</span>
-        <a
-          class="secure-link"
-          href="https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open secure view ↗
-        </a>
+      <header class="masthead">
+        <div class="brand">
+          <div class="mark" aria-hidden="true">MW</div>
+          <div>
+            <p class="eyebrow">Mosaic Wellness</p>
+            <p class="brand-name">Operations Intelligence</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="updated">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="updated-at">Loading latest reports…</span>
+          </div>
+          <button class="auth" id="auth-button" type="button" hidden>
+            Sign in with Google
+          </button>
+          <button class="refresh" id="refresh-button" type="button">Refresh data</button>
+        </div>
       </header>
 
-      <div class="loading" id="loading" role="status" aria-live="polite">
+      <section class="hero" aria-labelledby="page-title">
         <div>
-          <strong>Loading KPI dashboard</strong>
-          <span>Use your approved Mosaic Wellness Google account.</span>
-          <a
-            href="https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Sign in and open dashboard
-          </a>
+          <p class="kicker">Google Workspace · Unified KPI workspace</p>
+          <h1 id="page-title">Operations KPI Command Center</h1>
+          <p class="hero-copy">
+            One secure view of the latest operational health reports, with direct
+            access to every source dashboard and available Gmail message.
+          </p>
         </div>
-      </div>
+        <div class="summary" aria-label="Dashboard summary">
+          <strong id="report-count">—</strong>
+          <span>reports linked</span>
+        </div>
+      </section>
 
-      <iframe
-        id="dashboard"
-        title="Operations KPI Command Center"
-        src="https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec"
-        allow="clipboard-read; clipboard-write"
-        referrerpolicy="strict-origin-when-cross-origin"
-      ></iframe>
+      <div class="notice" id="notice" role="alert"></div>
+      <nav class="nav" id="report-nav" aria-label="Jump to report"></nav>
+      <section class="reports" id="reports" aria-live="polite">
+        <div class="loader"><span>Reading the latest KPI emails…</span></div>
+      </section>
+
+      <footer class="footer">
+        <p>Restricted to approved Mosaic Wellness Google accounts.</p>
+        <div class="footer-links">
+          <a id="configuration-link" href="#" target="_blank" rel="noopener noreferrer">Edit configuration ↗</a>
+          <a href="#page-title">Back to top ↑</a>
+        </div>
+      </footer>
     </main>
 
     <script>
-      const dashboard = document.getElementById("dashboard");
-      const loading = document.getElementById("loading");
-      window.addEventListener("message", (event) => {
-        if (event.data?.type !== "operations-kpi-dashboard-ready") return;
-        dashboard.classList.add("ready");
-        loading.hidden = true;
-      });
+      const reportsEl = document.getElementById('reports');
+      const navEl = document.getElementById('report-nav');
+      const noticeEl = document.getElementById('notice');
+      const refreshButton = document.getElementById('refresh-button');
+      const authButton = document.getElementById('auth-button');
+      const GOOGLE_OAUTH_CLIENT_ID =
+        '1021762366002-vo41asis58ss3qtt5j8tnkloujf1t73f.apps.googleusercontent.com';
+      const APPS_SCRIPT_DEPLOYMENT_ID =
+        'AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm';
+      const GOOGLE_OAUTH_SCOPES = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/script.scriptapp',
+        'https://www.googleapis.com/auth/script.send_mail',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ].join(' ');
+      const isAppsScriptRuntime =
+        typeof google !== 'undefined' &&
+        google.script &&
+        google.script.run;
+      let activeReportId = '';
+      let googleTokenClient = null;
+      let googleAccessToken = '';
 
-      window.setTimeout(() => {
-        if (!loading.hidden) loading.classList.add("sign-in");
-      }, 7000);
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function safeUrl(value) {
+        try {
+          const url = new URL(value);
+          return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function render(data) {
+        const reports = Array.isArray(data?.reports) ? data.reports : [];
+        document.getElementById('report-count').textContent = reports.length;
+        document.getElementById('updated-at').textContent =
+          `Updated ${formatDateTime(data.updatedAt)}`;
+        const configurationLink = document.getElementById('configuration-link');
+        const configurationUrl = safeUrl(data.configurationUrl);
+        if (configurationUrl) {
+          configurationLink.href = configurationUrl;
+          configurationLink.style.display = 'inline';
+        }
+
+        navEl.innerHTML = [
+          '<span class="nav-label">Reports</span>',
+          ...reports.map((report) =>
+            `<button type="button" data-report-id="${escapeHtml(report.id)}" role="tab">${escapeHtml(report.title)}</button>`
+          ),
+        ].join('');
+
+        reportsEl.innerHTML = reports.map((report, index) => {
+          const dashboardUrl = safeUrl(report.dashboardUrl);
+          const emailUrl = safeUrl(report.emailUrl);
+          const statusClass = report.status === 'ready' ? '' : ' missing';
+
+          return `
+            <article class="report" id="${escapeHtml(report.id)}" data-report-panel="${escapeHtml(report.id)}" role="tabpanel">
+              <div class="index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</div>
+              <div class="report-content">
+                <header class="report-head">
+                  <div>
+                    <p class="category">${escapeHtml(report.category)}</p>
+                    <h2>${escapeHtml(report.title)}</h2>
+                  </div>
+                  <div class="meta">
+                    <span class="fresh${statusClass}">${escapeHtml(report.statusLabel)}</span>
+                    <span>Reporting date · ${escapeHtml(report.reportingDate)}</span>
+                  </div>
+                </header>
+                ${renderReportBody(report)}
+                <footer class="report-foot">
+                  <p class="source" title="${escapeHtml(report.subject)}">
+                    Source · ${escapeHtml(report.sender)} · ${escapeHtml(report.subject)}
+                  </p>
+                  <div class="actions">
+                    ${linkButton(dashboardUrl, 'Open dashboard', 'primary')}
+                    ${linkButton(emailUrl, 'Open email', 'secondary')}
+                  </div>
+                </footer>
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        const requestedId = decodeURIComponent(location.hash.replace(/^#/, ''));
+        const availableIds = reports.map((report) => report.id);
+        if (!availableIds.includes(activeReportId)) {
+          activeReportId = availableIds.includes(requestedId)
+            ? requestedId
+            : '';
+        }
+        selectReport(activeReportId, false);
+
+        navEl.querySelectorAll('[data-report-id]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const selectedId =
+              activeReportId === button.dataset.reportId
+                ? ''
+                : button.dataset.reportId;
+            selectReport(selectedId, true);
+          });
+        });
+      }
+
+      function selectReport(reportId, updateHash) {
+        activeReportId = reportId || '';
+        navEl.querySelectorAll('[data-report-id]').forEach((button) => {
+          const isActive =
+            Boolean(activeReportId) &&
+            button.dataset.reportId === activeReportId;
+          button.classList.toggle('active', isActive);
+          button.setAttribute('aria-selected', String(isActive));
+          button.tabIndex = 0;
+        });
+        reportsEl.querySelectorAll('[data-report-panel]').forEach((panel) => {
+          panel.hidden =
+            Boolean(activeReportId) &&
+            panel.dataset.reportPanel !== activeReportId;
+        });
+        if (updateHash) {
+          const nextUrl = activeReportId
+            ? `#${encodeURIComponent(activeReportId)}`
+            : `${location.pathname}${location.search}`;
+          history.replaceState(null, '', nextUrl);
+        }
+      }
+
+      function renderReportBody(report) {
+        if (report.displayType === 'OWNER_AGEING_TABLE') {
+          return renderOwnerAgeingTable(report.table);
+        }
+        if (report.displayType === 'PUTAWAY_TOTALS_TABLE') {
+          return renderPutawayTotalsTable(report.table);
+        }
+        return `<div class="metric-grid">
+          ${(report.metrics || []).map((metric) => `
+            <div class="metric">
+              <p>${escapeHtml(metric.label)}</p>
+              <strong class="${escapeHtml(metric.tone)}">${escapeHtml(metric.value)}</strong>
+              <span>${escapeHtml(metric.note)}</span>
+            </div>
+          `).join('')}
+        </div>`;
+      }
+
+      function renderOwnerAgeingTable(table) {
+        if (!table || !Array.isArray(table.rows) || !table.rows.length) {
+          return '<div class="ageing-empty">The owner ageing table could not be parsed from the latest email.</div>';
+        }
+        const totalRow = table.totals
+          ? `<tr class="total-row">
+              <td colspan="2" class="owner">GRAND TOTAL</td>
+              ${ageingNumberCells(table.totals, true)}
+            </tr>`
+          : '';
+        return `<section class="ageing-section">
+          <h3 class="ageing-title">Open Gatepass Ageing Summary — By Owner</h3>
+          <div class="ageing-scroll">
+            <table class="ageing-table">
+              <thead>
+                <tr class="group-row">
+                  <th rowspan="2" class="serial group-base">Sr No</th>
+                  <th rowspan="2" class="owner group-base">Gatepass Owner</th>
+                  <th colspan="2" class="group-green">0–15 Days</th>
+                  <th colspan="2" class="group-orange">16–30 Days</th>
+                  <th colspan="2" class="group-red">Above 30 Days</th>
+                  <th colspan="2" class="group-base">Grand Total</th>
+                </tr>
+                <tr class="subhead">
+                  <th>Open Qty</th><th>GP Count</th>
+                  <th>Open Qty</th><th>GP Count</th>
+                  <th>Open Qty</th><th>GP Count</th>
+                  <th>Qty Total</th><th>Count Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${table.rows.map((row) => `
+                  <tr>
+                    <td class="serial">${escapeHtml(row.serialNumber)}</td>
+                    <td class="owner">${escapeHtml(row.owner)}</td>
+                    ${ageingNumberCells(row, false)}
+                  </tr>
+                `).join('')}
+                ${totalRow}
+              </tbody>
+            </table>
+          </div>
+        </section>`;
+      }
+
+      function ageingNumberCells(row, isTotal) {
+        const alertClass = isTotal ? '' : ' class="above-threshold"';
+        return `
+          <td>${formatIndianNumber(row.days0To15Qty)}</td>
+          <td>${formatIndianNumber(row.days0To15Count)}</td>
+          <td>${formatIndianNumber(row.days16To30Qty)}</td>
+          <td>${formatIndianNumber(row.days16To30Count)}</td>
+          <td${alertClass}>${formatIndianNumber(row.above30Qty)}</td>
+          <td${alertClass}>${formatIndianNumber(row.above30Count)}</td>
+          <td><strong>${formatIndianNumber(row.totalQty)}</strong></td>
+          <td><strong>${formatIndianNumber(row.totalCount)}</strong></td>
+        `;
+      }
+
+      function renderPutawayTotalsTable(table) {
+        if (!table || !Array.isArray(table.rows) || !table.rows.length) {
+          return '<div class="ageing-empty">The putaway totals table could not be parsed from the latest email.</div>';
+        }
+        const rows = table.rows.concat(table.totals ? [table.totals] : []);
+        return `<section class="ageing-section">
+          <h3 class="ageing-title">Open Putaway Ageing Summary — Requested Totals</h3>
+          <div class="ageing-scroll">
+            <table class="ageing-table putaway-table">
+              <thead>
+                <tr class="group-row">
+                  <th rowspan="2" class="owner group-base">Created By</th>
+                  <th colspan="2" class="group-green">0–3 Days</th>
+                  <th colspan="2" class="group-orange">4–7 Days</th>
+                  <th colspan="2" class="group-red">Above 7 Days</th>
+                  <th colspan="2" class="group-base">Grand Total</th>
+                </tr>
+                <tr class="subhead">
+                  <th>Putaway Count</th><th>Quantity</th>
+                  <th>Putaway Count</th><th>Quantity</th>
+                  <th>Putaway Count</th><th>Quantity</th>
+                  <th>Putaway Count</th><th>Total Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((row) => {
+                  const isTotal = row.owner === 'Grand Total';
+                  return `<tr class="${isTotal ? 'total-row' : 'owner-total-row'}">
+                    <td class="owner">${escapeHtml(row.owner)}</td>
+                    ${putawayNumberCells(row, isTotal)}
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </section>`;
+      }
+
+      function putawayNumberCells(row, isTotal) {
+        const alertClass = isTotal ? '' : ' class="above-threshold"';
+        return `
+          <td>${formatIndianNumber(row.days0To3Count)}</td>
+          <td>${formatIndianNumber(row.days0To3Qty)}</td>
+          <td>${formatIndianNumber(row.days4To7Count)}</td>
+          <td>${formatIndianNumber(row.days4To7Qty)}</td>
+          <td${alertClass}>${formatIndianNumber(row.above7Count)}</td>
+          <td${alertClass}>${formatIndianNumber(row.above7Qty)}</td>
+          <td><strong>${formatIndianNumber(row.totalCount)}</strong></td>
+          <td><strong>${formatIndianNumber(row.totalQty)}</strong></td>
+        `;
+      }
+
+      function formatIndianNumber(value) {
+        return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })
+          .format(Number(value || 0));
+      }
+
+      function linkButton(url, label, kind) {
+        if (!url) {
+          return `<span class="button disabled">${escapeHtml(label)} unavailable</span>`;
+        }
+        return `<a class="button ${kind}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)} <span aria-hidden="true">↗</span></a>`;
+      }
+
+      function formatDateTime(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'just now';
+        return new Intl.DateTimeFormat('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: 'Asia/Kolkata',
+        }).format(date);
+      }
+
+      function showError(error) {
+        const message = error?.message || String(error || 'Unable to load KPI data.');
+        noticeEl.textContent = message;
+        noticeEl.classList.add('show');
+        reportsEl.innerHTML =
+          '<div class="loader"><span>Unable to load reports. Use Refresh data to try again.</span></div>';
+      }
+
+      function setLoadingState(isLoading, forceRefresh = false) {
+        refreshButton.disabled = isLoading;
+        refreshButton.textContent = isLoading
+          ? (forceRefresh ? 'Refreshing…' : 'Loading…')
+          : 'Refresh data';
+      }
+
+      async function runAppsScriptFunction(functionName) {
+        const response = await fetch(
+          `https://script.googleapis.com/v1/scripts/${APPS_SCRIPT_DEPLOYMENT_ID}:run`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${googleAccessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              function: functionName,
+              parameters: [],
+              devMode: false,
+            }),
+          },
+        );
+        const payload = await response.json();
+        if (!response.ok || payload.error) {
+          const detail = payload?.error?.details?.[0]?.errorMessage;
+          const error = new Error(
+            detail ||
+              payload?.error?.message ||
+              'Google could not load the KPI dashboard.',
+          );
+          error.status = response.status;
+          throw error;
+        }
+        return payload?.response?.result;
+      }
+
+      async function loadDashboardFromGitHub(forceRefresh) {
+        const functionName = forceRefresh
+          ? 'refreshDashboardData'
+          : 'getDashboardData';
+        try {
+          render(await runAppsScriptFunction(functionName));
+        } catch (error) {
+          if (error.status === 401) {
+            googleAccessToken = '';
+            authButton.textContent = 'Sign in with Google';
+            authButton.hidden = false;
+            refreshButton.hidden = true;
+          }
+          throw error;
+        }
+      }
+
+      function loadDashboard(forceRefresh = false) {
+        if (!isAppsScriptRuntime && !googleAccessToken) {
+          showError('Sign in with your approved Mosaic Wellness Google account.');
+          return;
+        }
+
+        setLoadingState(true, forceRefresh);
+        noticeEl.classList.remove('show');
+
+        if (!isAppsScriptRuntime) {
+          loadDashboardFromGitHub(forceRefresh)
+            .catch(showError)
+            .finally(() => setLoadingState(false));
+          return;
+        }
+
+        const runner = google.script.run
+          .withSuccessHandler((data) => {
+            render(data);
+            setLoadingState(false);
+          })
+          .withFailureHandler((error) => {
+            showError(error);
+            setLoadingState(false);
+          });
+
+        if (forceRefresh) runner.refreshDashboardData();
+        else runner.getDashboardData();
+      }
+
+      function initializeGoogleOAuth() {
+        refreshButton.hidden = true;
+        authButton.hidden = false;
+        document.getElementById('updated-at').textContent =
+          'Sign in to load the latest reports';
+        reportsEl.innerHTML =
+          '<div class="loader"><span>Google sign-in is required to read KPI reports.</span></div>';
+
+        if (!window.google?.accounts?.oauth2) {
+          showError('Google sign-in could not load. Refresh the page and try again.');
+          return;
+        }
+
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_OAUTH_CLIENT_ID,
+          scope: GOOGLE_OAUTH_SCOPES,
+          callback: (tokenResponse) => {
+            if (tokenResponse.error) {
+              showError(tokenResponse.error_description || tokenResponse.error);
+              return;
+            }
+            googleAccessToken = tokenResponse.access_token;
+            authButton.textContent = 'Switch account';
+            refreshButton.hidden = false;
+            loadDashboard(false);
+          },
+          error_callback: (error) => {
+            showError(error?.message || 'Google sign-in was cancelled.');
+          },
+        });
+      }
+
+      function requestGoogleAccess() {
+        if (!googleTokenClient) initializeGoogleOAuth();
+        googleTokenClient?.requestAccessToken({
+          prompt: googleAccessToken ? 'select_account' : 'consent',
+        });
+      }
+
+      refreshButton.addEventListener('click', () => loadDashboard(true));
+      authButton.addEventListener('click', requestGoogleAccess);
+      if (window.parent !== window) {
+        window.parent.postMessage(
+          { type: 'operations-kpi-dashboard-ready' },
+          'https://bjpatel90.github.io',
+        );
+      }
+      if (isAppsScriptRuntime) {
+        loadDashboard(false);
+      } else {
+        window.addEventListener('load', initializeGoogleOAuth);
+      }
     </script>
   </body>
 </html>

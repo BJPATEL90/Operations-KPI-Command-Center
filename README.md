@@ -14,6 +14,11 @@ source dashboard, and sends a scheduled HTML summary.
 
 The dashboard is available only to approved Mosaic Wellness Google accounts.
 
+The GitHub Pages application uses Google Identity Services with OAuth Client ID
+`1021762366002-vo41asis58ss3qtt5j8tnkloujf1t73f.apps.googleusercontent.com`.
+The access token remains in browser memory and is sent only to Google's Apps
+Script API. No OAuth client secret is stored in this repository.
+
 ## Current reports
 
 | Order | Report | KPIs or table shown | Sender | External dashboard |
@@ -130,6 +135,21 @@ The Apps Script manifest requests:
 
 The web app is restricted to the Google Workspace domain and runs as the
 deployment owner.
+
+### GitHub OAuth/API connection
+
+The Google Cloud project containing the OAuth Client ID must also be connected
+to the spreadsheet-bound Apps Script project:
+
+1. In Apps Script, open **Project Settings**.
+2. Under **Google Cloud Platform (GCP) Project**, select **Change project**.
+3. Enter project number `1021762366002`.
+4. In that Google Cloud project, enable the **Google Apps Script API**.
+5. In the OAuth web client, keep
+   `https://bjpatel90.github.io` as an authorized JavaScript origin.
+
+The API executable is restricted to the Mosaic Wellness domain, and the script
+performs an additional approved-user check before returning KPI data.
 
 ## Project structure
 
