@@ -7,9 +7,9 @@ source dashboard, and sends a scheduled HTML summary.
 
 ## Live links
 
-- [Open the KPI dashboard](https://script.google.com/macros/s/AKfycby5ih5rzT02m8e254Ulu553JUZV5nm1lx3O1o4-clLAh79fsQIcE7-zGwUra7NgVl_eTA/exec)
+- [Open the KPI dashboard](https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec)
 - [Open the configuration sheet](https://docs.google.com/spreadsheets/d/1irCr4_VwE9kG3hSSER_LjkieP0UMgTx7HBbdsB3kB0U/edit)
-- [Open the Apps Script project](https://script.google.com/d/1laydCcQBKrpc3tH5rLOIdfz1Vkasbh5Jq2fH73NwM91gDcxcIyDe0MiV/edit)
+- [Open the spreadsheet-bound Apps Script project](https://script.google.com/d/1GKqTDXBLWGzO7qFlWWyaU8dy0H-L6sRFMlziu14MUMHi4N8eb8bvqTNh/edit)
 
 The dashboard is available only to approved Mosaic Wellness Google accounts.
 
@@ -46,7 +46,9 @@ The current Google Sheet configuration is:
 - Schedule enabled: `TRUE`
 - Scheduled hour: approximately `11:00 AM`
 - Time zone: `Asia/Kolkata`
-- Current recipient: `bhavesh.patel@mosaicwellness.in`
+- Current recipients: `bhavesh.patel@mosaicwellness.in`,
+  `shailendra.singh@mosaicwellness.in`, `shailendra@mosaicwellness.in`, and
+  `manish.khaladkar@mosaicwellness.in`
 - Dashboard data refresh trigger: hourly
 
 Each report section includes:
@@ -163,12 +165,14 @@ KPI parser tests passed
 
 ## Deployment
 
-The Apps Script source is managed with `clasp`.
+The Apps Script source is bound to the configuration spreadsheet and is
+managed with `clasp`. It is also available from **Extensions → Apps Script**
+inside the configuration sheet.
 
 ```bash
 cd apps-script
 clasp push --force
-clasp deploy --deploymentId AKfycby5ih5rzT02m8e254Ulu553JUZV5nm1lx3O1o4-clLAh79fsQIcE7-zGwUra7NgVl_eTA
+clasp deploy --deploymentId AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm
 ```
 
 After changing reports or KPI rules, update the configuration sheet and use the

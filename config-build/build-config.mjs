@@ -131,15 +131,19 @@ const settingsRows = [
   ["TIME_ZONE", "Asia/Kolkata", "Time zone used for refreshes, dates and scheduled emails"],
   ["CACHE_MINUTES", 30, "Minutes before dashboard data is refreshed from Gmail"],
   ["SCHEDULED_EMAIL_HOUR", 11, "Daily email hour in 24-hour format"],
-  ["EMAIL_RECIPIENTS", "bhavesh.patel@mosaicwellness.in", "Use | between multiple recipients"],
+  [
+    "EMAIL_RECIPIENTS",
+    "bhavesh.patel@mosaicwellness.in|shailendra.singh@mosaicwellness.in|shailendra@mosaicwellness.in|manish.khaladkar@mosaicwellness.in",
+    "Use | between multiple recipients",
+  ],
   [
     "ALLOWED_USERS",
-    "bhavesh.patel@mosaicwellness.in|shailendra.singh@mosaicwellness.in|shailendra@mosaicwellness.in",
+    "bhavesh.patel@mosaicwellness.in|shailendra.singh@mosaicwellness.in|shailendra@mosaicwellness.in|manish.khaladkar@mosaicwellness.in",
     "Google accounts allowed to open the dashboard",
   ],
   [
     "DASHBOARD_URL",
-    "https://script.google.com/macros/s/AKfycby5ih5rzT02m8e254Ulu553JUZV5nm1lx3O1o4-clLAh79fsQIcE7-zGwUra7NgVl_eTA/exec",
+    "https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec",
     "Published consolidated dashboard URL",
   ],
   ["SCHEDULE_ENABLED", true, "TRUE sends the consolidated KPI email daily"],

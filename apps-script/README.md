@@ -3,38 +3,36 @@
 Google Apps Script web app for consolidating the latest KPI emails into one
 restricted Mosaic Wellness dashboard.
 
-All report matching, KPI extraction labels, access users, scheduled recipients,
-and schedule settings are maintained in the
+The script is bound to the
 [Operations KPI Configuration](https://docs.google.com/spreadsheets/d/1irCr4_VwE9kG3hSSER_LjkieP0UMgTx7HBbdsB3kB0U/edit)
-Google Sheet. The script contains only the configuration spreadsheet ID and
-application infrastructure.
-
-## Approved viewers
-
-- bhavesh.patel@mosaicwellness.in
-- shailendra.singh@mosaicwellness.in
-- shailendra@mosaicwellness.in
+Google Sheet. The same project opens from **Extensions → Apps Script** in that
+spreadsheet. Report matching, KPI extraction labels, approved users, scheduled
+recipients, and schedule settings are maintained in the sheet.
 
 ## Current reports
 
-- Inventory Cycle Count
-- FEFO Violations
-- Open Gatepass Ageing — owner-wise ageing table
+1. Inventory Cycle Count
+2. Inward TAT
+3. FEFO Violations
+4. Open Gatepass Ageing — owner-wise ageing table
+5. Open Putaway — selected owner totals and grand total
 
-The web app reads Gmail in read-only mode, caches parsed KPI values, refreshes
-stale data on page load, and exposes a manual refresh action. It sends the
-consolidated KPI summary daily around 11:00 AM Asia/Kolkata to
-`bhavesh.patel@mosaicwellness.in`. Run `setupDashboard` once as the owner to
-install the hourly data refresh and daily email triggers.
+## Live links
 
-## Google Apps Script
+- [Spreadsheet-bound Apps Script project](https://script.google.com/d/1GKqTDXBLWGzO7qFlWWyaU8dy0H-L6sRFMlziu14MUMHi4N8eb8bvqTNh/edit)
+- [Restricted dashboard](https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec)
 
-- Project editor:
-  https://script.google.com/d/1laydCcQBKrpc3tH5rLOIdfz1Vkasbh5Jq2fH73NwM91gDcxcIyDe0MiV/edit
-- Restricted web app:
-  https://script.google.com/macros/s/AKfycby5ih5rzT02m8e254Ulu553JUZV5nm1lx3O1o4-clLAh79fsQIcE7-zGwUra7NgVl_eTA/exec
+## First-time authorization
 
-Before first use, open the project editor as
-`bhavesh.patel@mosaicwellness.in`, select `setupDashboard`, and click **Run**.
-Approve the requested read-only Gmail and trigger permissions. This is required
-once for the deployment owner.
+Open the project as `bhavesh.patel@mosaicwellness.in`, select
+`setupDashboard`, and click **Run**. Approve the requested Gmail, Sheets,
+trigger, email, and signed-in-user permissions. This installs:
+
+- `refreshKpiCache_` every hour
+- `sendScheduledKpiEmail_` daily around the configured hour
+
+Use `sendTestKpiEmail` to send a test summary only to
+`bhavesh.patel@mosaicwellness.in`.
+
+The scheduled summary is sent around 11:00 AM Asia/Kolkata to the recipients
+listed under `EMAIL_RECIPIENTS` in the Settings tab.
