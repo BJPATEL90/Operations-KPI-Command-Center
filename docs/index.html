@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f1e8" />
+    <meta
+      name="description"
+      content="Mosaic Wellness Operations KPI Command Center"
+    />
+    <title>Operations KPI Command Center</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background: #f5f1e8;
+        color: #10231c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        overflow: hidden;
+      }
+
+      .shell {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        grid-template-rows: 46px 1fr;
+        background: #f5f1e8;
+      }
+
+      .bar {
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 18px;
+        border-bottom: 1px solid #d9d2c4;
+        background: #fffdf8;
+        font-size: 13px;
+      }
+
+      .brand {
+        overflow: hidden;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .secure-link {
+        flex: none;
+        color: #176348;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .secure-link:hover,
+      .secure-link:focus-visible {
+        text-decoration: underline;
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #f5f1e8;
+        opacity: 0;
+        transition: opacity 180ms ease;
+      }
+
+      iframe.ready {
+        opacity: 1;
+      }
+
+      .loading {
+        position: absolute;
+        inset: 46px 0 0;
+        z-index: 1;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #f5f1e8;
+        text-align: center;
+      }
+
+      .loading[hidden] {
+        display: none;
+      }
+
+      .loading strong {
+        display: block;
+        margin-bottom: 8px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(24px, 4vw, 38px);
+        font-weight: 500;
+      }
+
+      .loading span {
+        color: #66716c;
+        font-size: 14px;
+      }
+
+      .loading a {
+        display: none;
+        width: fit-content;
+        margin: 20px auto 0;
+        padding: 12px 18px;
+        border-radius: 8px;
+        background: #176348;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .loading.sign-in a {
+        display: block;
+      }
+
+      @media (max-width: 640px) {
+        .shell {
+          grid-template-rows: 42px 1fr;
+        }
+
+        .bar {
+          padding: 0 12px;
+          font-size: 12px;
+        }
+
+        .loading {
+          inset-block-start: 42px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="bar">
+        <span class="brand">Mosaic Wellness · Operations KPI</span>
+        <a
+          class="secure-link"
+          href="https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open secure view ↗
+        </a>
+      </header>
+
+      <div class="loading" id="loading" role="status" aria-live="polite">
+        <div>
+          <strong>Loading KPI dashboard</strong>
+          <span>Use your approved Mosaic Wellness Google account.</span>
+          <a
+            href="https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Sign in and open dashboard
+          </a>
+        </div>
+      </div>
+
+      <iframe
+        id="dashboard"
+        title="Operations KPI Command Center"
+        src="https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec"
+        allow="clipboard-read; clipboard-write"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </main>
+
+    <script>
+      const dashboard = document.getElementById("dashboard");
+      const loading = document.getElementById("loading");
+      window.addEventListener("message", (event) => {
+        if (event.data?.type !== "operations-kpi-dashboard-ready") return;
+        dashboard.classList.add("ready");
+        loading.hidden = true;
+      });
+
+      window.setTimeout(() => {
+        if (!loading.hidden) loading.classList.add("sign-in");
+      }, 7000);
+    </script>
+  </body>
+</html>

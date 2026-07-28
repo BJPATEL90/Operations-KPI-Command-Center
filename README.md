@@ -7,7 +7,8 @@ source dashboard, and sends a scheduled HTML summary.
 
 ## Live links
 
-- [Open the KPI dashboard](https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec)
+- [Open the KPI dashboard on GitHub Pages](https://bjpatel90.github.io/Operations-KPI-Command-Center/)
+- [Open the secure Apps Script view](https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec)
 - [Open the configuration sheet](https://docs.google.com/spreadsheets/d/1irCr4_VwE9kG3hSSER_LjkieP0UMgTx7HBbdsB3kB0U/edit)
 - [Open the spreadsheet-bound Apps Script project](https://script.google.com/d/1GKqTDXBLWGzO7qFlWWyaU8dy0H-L6sRFMlziu14MUMHi4N8eb8bvqTNh/edit)
 

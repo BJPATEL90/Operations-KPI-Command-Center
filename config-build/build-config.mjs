@@ -143,7 +143,7 @@ const settingsRows = [
   ],
   [
     "DASHBOARD_URL",
-    "https://script.google.com/macros/s/AKfycbxEtx7ixBmTku1k1L9xrm1LqO96B_7jJxwx3Vzamj6EHyaELqxybhFiEM8ARjvQCyVm/exec",
+    "https://bjpatel90.github.io/Operations-KPI-Command-Center/",
     "Published consolidated dashboard URL",
   ],
   ["SCHEDULE_ENABLED", true, "TRUE sends the consolidated KPI email daily"],

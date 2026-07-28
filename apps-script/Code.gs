@@ -141,12 +141,12 @@ function doGet() {
   if (!isAllowedViewer_(viewerEmail, runtimeConfig)) {
     return HtmlService.createHtmlOutput(buildAccessDeniedHtml_(viewerEmail))
       .setTitle('Access required · Operations KPI Command Center')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Operations KPI Command Center')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT)
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 

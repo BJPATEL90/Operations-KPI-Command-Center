@@ -617,6 +617,12 @@
       }
 
       refreshButton.addEventListener('click', () => loadDashboard(true));
+      if (window.parent !== window) {
+        window.parent.postMessage(
+          { type: 'operations-kpi-dashboard-ready' },
+          'https://bjpatel90.github.io',
+        );
+      }
       loadDashboard(false);
     </script>
   </body>
