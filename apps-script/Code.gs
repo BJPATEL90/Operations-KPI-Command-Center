@@ -725,10 +725,9 @@ function findLatestReportMessage_(config) {
     thread.getMessages().forEach((message) => {
       const subject = message.getSubject() || '';
       const from = (message.getFrom() || '').toLowerCase();
-      const isReply = /^(re|fwd?|aw):\s*/i.test(subject);
 
       if (
-        !isReply &&
+        !isAutomatedOrForwardedReplySubject_(subject) &&
         subject
           .toLowerCase()
           .includes(config.subjectContains.toLowerCase()) &&
@@ -741,6 +740,16 @@ function findLatestReportMessage_(config) {
 
   matchingMessages.sort((a, b) => b.getDate().getTime() - a.getDate().getTime());
   return matchingMessages[0] || null;
+}
+
+function isAutomatedOrForwardedReplySubject_(subject) {
+  const normalized = String(subject || '').trim();
+  return (
+    /^(re|fwd?|aw):\s*/i.test(normalized) ||
+    /^(out[\s-]*of[\s-]*office|automatic reply|auto(?:matic)? reply|autoreply|away from office|vacation reply)\b/i.test(
+      normalized,
+    )
+  );
 }
 
 function parseOwnerAgeingTable_(text) {

@@ -137,6 +137,18 @@ assert.deepEqual(
   Array.from(inventory, (metric) => metric.value),
   ["99.02%", "98.6%", "99.56%", "0%"],
 );
+assert.equal(
+  context.isAutomatedOrForwardedReplySubject_(
+    "Out-of-Office Re: Daily Cycle count inventory Healh report - 29 Jul 2026",
+  ),
+  true,
+);
+assert.equal(
+  context.isAutomatedOrForwardedReplySubject_(
+    "Daily Cycle count inventory Healh report - 29 Jul 2026",
+  ),
+  false,
+);
 assert.deepEqual(
   Array.from(fefo, (metric) => metric.value),
   ["12", "21", "79%", "21%"],
