@@ -191,7 +191,7 @@ const sheets = {
     ["Key", "Value", "Description"],
     ["TIME_ZONE", "Asia/Kolkata", ""],
     ["CACHE_MINUTES", 30, ""],
-    ["SCHEDULED_EMAIL_TIME", "11:15", ""],
+    ["SCHEDULED_EMAIL_TIME", "11:30", ""],
     ["EMAIL_RECIPIENTS", "bhavesh.patel@mosaicwellness.in", ""],
     ["ALLOWED_USERS", "bhavesh.patel@mosaicwellness.in|shailendra@mosaicwellness.in", ""],
     ["DASHBOARD_URL", "https://example.com/dashboard", ""],
@@ -239,6 +239,6 @@ assert.deepEqual(Array.from(runtime.allowedEmails), [
   "shailendra@mosaicwellness.in",
 ]);
 assert.equal(runtime.scheduledEmailHour, 11);
-assert.equal(runtime.scheduledEmailMinute, 15);
+assert.equal(runtime.scheduledEmailMinute, 30);
 
 console.log("KPI parser tests passed");

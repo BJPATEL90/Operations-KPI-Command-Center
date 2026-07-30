@@ -50,7 +50,7 @@ is shown when a dashboard URL is available.
 The current Google Sheet configuration is:
 
 - Schedule enabled: `TRUE`
-- Scheduled time: approximately `11:15 AM`
+- Scheduled time: approximately `11:30 AM`
 - Time zone: `Asia/Kolkata`
 - Current recipients: `bhavesh.patel@mosaicwellness.in`,
   `shailendra.singh@mosaicwellness.in`, `shailendra@mosaicwellness.in`, and
