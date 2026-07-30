@@ -74,13 +74,19 @@ function readRuntimeConfiguration_() {
   const cacheMinutes =
     Number(settingMap.CACHE_MINUTES) ||
     DASHBOARD_CONFIG.fallbackCacheMinutes;
+  const scheduledEmailTime = parseScheduledEmailTime_(
+    settingMap.SCHEDULED_EMAIL_TIME ||
+      settingMap.SCHEDULED_EMAIL_HOUR ||
+      '11:00',
+  );
 
   return {
     spreadsheetUrl: spreadsheet.getUrl(),
     timeZone,
     cacheMinutes,
     cacheSeconds: Math.max(60, Math.round(cacheMinutes * 60)),
-    scheduledEmailHour: Number(settingMap.SCHEDULED_EMAIL_HOUR) || 11,
+    scheduledEmailHour: scheduledEmailTime.hour,
+    scheduledEmailMinute: scheduledEmailTime.minute,
     scheduledEmailRecipients: splitList_(settingMap.EMAIL_RECIPIENTS),
     allowedEmails: splitList_(settingMap.ALLOWED_USERS).map((email) =>
       email.toLowerCase(),
@@ -123,6 +129,17 @@ function splitList_(value) {
     .split(/[|,;]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function parseScheduledEmailTime_(value) {
+  const text = String(value ?? '').trim();
+  const match = text.match(/^(\d{1,2})(?::(\d{1,2}))?$/);
+  const hour = match ? Number(match[1]) : 11;
+  const minute = match && match[2] !== undefined ? Number(match[2]) : 0;
+  return {
+    hour: hour >= 0 && hour <= 23 ? hour : 11,
+    minute: minute >= 0 && minute <= 59 ? minute : 0,
+  };
 }
 
 function isTruthy_(value) {
@@ -257,7 +274,7 @@ function setupDashboard() {
     ScriptApp.newTrigger('sendScheduledKpiEmail_')
       .timeBased()
       .atHour(runtimeConfig.scheduledEmailHour)
-      .nearMinute(0)
+      .nearMinute(runtimeConfig.scheduledEmailMinute)
       .everyDays(1)
       .inTimezone(runtimeConfig.timeZone)
       .create();
@@ -267,7 +284,7 @@ function setupDashboard() {
     dashboard: refreshKpiCache_(runtimeConfig),
     configurationSheet: runtimeConfig.spreadsheetUrl,
     schedule: runtimeConfig.scheduleEnabled
-      ? `Daily around ${runtimeConfig.scheduledEmailHour}:00 ${runtimeConfig.timeZone}`
+      ? `Daily around ${String(runtimeConfig.scheduledEmailHour).padStart(2, '0')}:${String(runtimeConfig.scheduledEmailMinute).padStart(2, '0')} ${runtimeConfig.timeZone}`
       : 'Disabled in Settings',
     recipients: runtimeConfig.scheduledEmailRecipients,
   };
@@ -345,6 +362,48 @@ function buildConfigSignature_(runtimeConfig) {
 }
 
 function sendScheduledKpiEmail_() {
+  const runtimeConfig = readRuntimeConfiguration_();
+  const currentTime = Utilities.formatDate(
+    new Date(),
+    runtimeConfig.timeZone,
+    'H:m',
+  )
+    .split(':')
+    .map(Number);
+  const currentMinutes = currentTime[0] * 60 + currentTime[1];
+  const scheduledMinutes =
+    runtimeConfig.scheduledEmailHour * 60 +
+    runtimeConfig.scheduledEmailMinute;
+
+  if (currentMinutes < scheduledMinutes) {
+    ScriptApp.getProjectTriggers()
+      .filter(
+        (trigger) =>
+          trigger.getHandlerFunction() ===
+          'sendDeferredScheduledKpiEmail_',
+      )
+      .forEach((trigger) => ScriptApp.deleteTrigger(trigger));
+
+    ScriptApp.newTrigger('sendDeferredScheduledKpiEmail_')
+      .timeBased()
+      .at(
+        new Date(
+          Date.now() +
+            (scheduledMinutes - currentMinutes) * 60 * 1000,
+        ),
+      )
+      .create();
+    return {
+      deferred: true,
+      scheduledTime: `${String(runtimeConfig.scheduledEmailHour).padStart(2, '0')}:${String(runtimeConfig.scheduledEmailMinute).padStart(2, '0')}`,
+      timeZone: runtimeConfig.timeZone,
+    };
+  }
+
+  return sendKpiEmail_(false);
+}
+
+function sendDeferredScheduledKpiEmail_() {
   return sendKpiEmail_(false);
 }
 
