@@ -1057,13 +1057,13 @@ function firstStandaloneMetric_(text) {
 
   for (let i = 0; i < lines.length; i += 1) {
     const match = lines[i].match(
-      /^([₹$]?\s*[\d,]+(?:\.\d+)?%?|\d{1,3}:\d{2}|—|-)$/,
+      /^([₹$]?\s*[+-]?[\d,]+(?:\.\d+)?%?|\d{1,3}:\d{2}|—|-)$/,
     );
     if (match) return match[1].replace(/\s+/g, '');
   }
 
   const fallback = text.match(
-    /(?:^|\s)(\d{1,3}:\d{2}|\d[\d,]*(?:\.\d+)?%?|—)(?=\s|$)/,
+    /(?:^|\s)(\d{1,3}:\d{2}|[+-]?\d[\d,]*(?:\.\d+)?%?|—)(?=\s|$)/,
   );
   return fallback ? fallback[1] : '';
 }
@@ -1078,7 +1078,7 @@ function lastStandaloneMetric_(text) {
 
   for (let i = 0; i < lines.length; i += 1) {
     const match = lines[i].match(
-      /^([₹$]?\s*[\d,]+(?:\.\d+)?%?|\d{1,3}:\d{2}|—|-)$/,
+      /^([₹$]?\s*[+-]?[\d,]+(?:\.\d+)?%?|\d{1,3}:\d{2}|—|-)$/,
     );
     if (match) return match[1].replace(/\s+/g, '');
   }

@@ -25,9 +25,10 @@ Script API. No OAuth client secret is stored in this repository.
 |---:|---|---|---|---|
 | 1 | Inventory Cycle Count | Last Quarter, Last Month, Month to Date, Yesterday | `bhavesh.patel@mosaicwellness.in` | [Inventory Visibility](https://bjpatel90.github.io/Inventory_Visibility/) |
 | 2 | Inward TAT | Last Quarter, Last Month, Month to Date, Yesterday | `bhavesh.patel@mosaicwellness.in` | [Inward TAT](https://bjpatel90.github.io/Inward-TAT/) |
-| 3 | FEFO Violations | Violated Batch Count, Dispatch First Batch Count, Overall Compliance, Overall Non-Compliance | `farhana.teli@mosaicwellness.in` | [FEFO dashboard](https://datastudio.google.com/u/0/reporting/320397c5-8ecd-4e85-b281-36d3694a82e8/page/JaFbF) |
-| 4 | Open Gatepass Ageing | Owner-wise quantities and counts for 0–15, 16–30, Above 30 Days, and Grand Total | `farhana.teli@mosaicwellness.in` | Source email and attached CSV |
-| 5 | Open Putaway | Rupesh Total, Sahil Total, Shraddha Total, Suraj Gupta Total, and Grand Total across 0–3, 4–7, and Above 7 Days | `farhana.teli@mosaicwellness.in` | Source email and attached CSV |
+| 3 | Inventory Adjustment Report | Daily Total Events, Added Qty, Removed Qty, Net Variance, Balanced SKUs, Variance SKUs, Facilities, Users Impacted; plus MTD Events, Added, Removed, and Variance | `bhavesh.patel@mosaicwellness.in` | [Inventory Adjustment dashboard](https://bjpatel90.github.io/inventory-adjustment-dashboard/) |
+| 4 | FEFO Violations | Violated Batch Count, Dispatch First Batch Count, Overall Compliance, Overall Non-Compliance | `farhana.teli@mosaicwellness.in` | [FEFO dashboard](https://datastudio.google.com/u/0/reporting/320397c5-8ecd-4e85-b281-36d3694a82e8/page/JaFbF) |
+| 5 | Open Gatepass Ageing | Owner-wise quantities and counts for 0–15, 16–30, Above 30 Days, and Grand Total | `farhana.teli@mosaicwellness.in` | Source email and attached CSV |
+| 6 | Open Putaway | Rupesh Total, Sahil Total, Shraddha Total, Suraj Gupta Total, and Grand Total across 0–3, 4–7, and Above 7 Days | `farhana.teli@mosaicwellness.in` | Source email and attached CSV |
 
 Every report includes a clickable source-email link. The source-dashboard button
 is shown when a dashboard URL is available.

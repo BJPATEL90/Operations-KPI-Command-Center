@@ -104,6 +104,47 @@ const inwardTatHtml = `
 </table>
 `;
 
+const inventoryAdjustmentHtml = `
+<section>
+  <h3>DAILY SUMMARY</h3>
+  <div><strong>68</strong><span>TOTAL EVENTS</span></div>
+  <div><strong>2,205</strong><span>ADDED QTY</span></div>
+  <div><strong>2,205</strong><span>REMOVED QTY</span></div>
+  <div><strong>+0</strong><span>NET VARIANCE</span></div>
+  <div><strong>68</strong><span>BALANCED SKUS</span></div>
+  <div><strong>0</strong><span>VARIANCE SKUS</span></div>
+  <div><strong>2</strong><span>FACILITIES</span></div>
+  <div><strong>2</strong><span>USERS IMPACTED</span></div>
+  <h3>MONTH-TO-DATE SUMMARY</h3>
+  <div><strong>114</strong><span>MTD EVENTS</span></div>
+  <div><strong>5,697</strong><span>MTD ADDED</span></div>
+  <div><strong>5,697</strong><span>MTD REMOVED</span></div>
+  <div><strong>+0</strong><span>MTD VARIANCE</span></div>
+</section>
+`;
+
+const inventoryAdjustmentConfig = [
+  ["Total Events", "Total Events", "", "Daily summary"],
+  ["Added Qty", "Added Qty", "positive", "Daily summary"],
+  ["Removed Qty", "Removed Qty", "warning", "Daily summary"],
+  ["Net Variance", "Net Variance", "positive", "Daily summary"],
+  ["Balanced SKUs", "Balanced SKUs", "positive", "Daily summary"],
+  ["Variance SKUs", "Variance SKUs", "warning", "Daily summary"],
+  ["Facilities", "Facilities", "", "Daily summary"],
+  ["Users Impacted", "Users Impacted", "", "Daily summary"],
+  ["MTD Events", "MTD Events", "", "Month-to-date summary"],
+  ["MTD Added", "MTD Added", "positive", "Month-to-date summary"],
+  ["MTD Removed", "MTD Removed", "warning", "Month-to-date summary"],
+  ["MTD Variance", "MTD Variance", "positive", "Month-to-date summary"],
+].map(([label, searchLabel, tone, noteValue]) => ({
+  label,
+  searchLabels: [searchLabel],
+  valuePosition: "BEFORE_OR_AFTER",
+  tone,
+  noteRule: "FIXED",
+  noteValue,
+}));
+
 const inventory = context.parseConfiguredMetrics_(inventoryBody, [
   { label: "Last Quarter", searchLabels: ["Last Quarter"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Quarter" },
   { label: "Last Month", searchLabels: ["Last Month"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Month" },
@@ -131,6 +172,11 @@ const inwardTatFromHtml = context.parseBestConfiguredMetrics_(
     { label: "Month to Date", searchLabels: ["Month to Date", "MTD"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Month to Date" },
     { label: "Yesterday", searchLabels: ["Yesterday"], valuePosition: "AFTER", tone: "warning", noteRule: "DATE_RANGE", noteValue: "Yesterday" },
   ],
+);
+const inventoryAdjustment = context.parseBestConfiguredMetrics_(
+  "",
+  inventoryAdjustmentHtml,
+  inventoryAdjustmentConfig,
 );
 
 assert.deepEqual(
@@ -170,6 +216,10 @@ assert.deepEqual(
   Array.from(inwardTatFromHtml, (metric) => metric.value),
   ["29:50", "28:24", "27:09", "—"],
 );
+assert.deepEqual(
+  Array.from(inventoryAdjustment, (metric) => metric.value),
+  ["68", "2,205", "2,205", "+0", "68", "0", "2", "2", "114", "5,697", "5,697", "+0"],
+);
 const gatepass = context.parseOwnerAgeingTable_(gatepassBody);
 assert.equal(gatepass.rows.length, 4);
 assert.equal(gatepass.rows[2].owner, "Suraj Gupta");
@@ -201,14 +251,16 @@ const sheets = {
     ["Active", "Sort Order", "Report ID", "Report Name", "Category", "Sender Email", "Gmail Search Query", "Subject Contains", "Dashboard URL Fallback", "Display Type"],
     [true, 1, "inventory-cycle-count", "Inventory Cycle Count", "Inventory control", "bhavesh.patel@mosaicwellness.in", "inventory query", "Daily Cycle count inventory", "https://example.com/inventory", "METRIC_CARDS"],
     [true, 2, "inward-tat", "Inward TAT", "Inbound operations", "bhavesh.patel@mosaicwellness.in", "inward query", "Inward TAT |", "https://example.com/inward", "METRIC_CARDS"],
-    [true, 3, "fefo-violations", "FEFO Violations", "Dispatch compliance", "farhana.teli@mosaicwellness.in", "fefo query", "Daily FEFO Violation Check", "https://example.com/fefo", "METRIC_CARDS"],
-    [true, 4, "open-gatepass-ageing", "Open Gatepass Ageing", "Gatepass ageing", "farhana.teli@mosaicwellness.in", "gatepass query", "Open Gatepass Ageing Report", "", "OWNER_AGEING_TABLE"],
-    [true, 5, "open-putaway", "Open Putaway", "Putaway ageing", "farhana.teli@mosaicwellness.in", "putaway query", "Open Putaway Report", "", "PUTAWAY_TOTALS_TABLE"],
+    [true, 3, "inventory-adjustment", "Inventory Adjustment Report", "Inventory adjustments", "bhavesh.patel@mosaicwellness.in", "adjustment query", "Inventory Adjustment Report |", "https://example.com/adjustment", "METRIC_CARDS"],
+    [true, 4, "fefo-violations", "FEFO Violations", "Dispatch compliance", "farhana.teli@mosaicwellness.in", "fefo query", "Daily FEFO Violation Check", "https://example.com/fefo", "METRIC_CARDS"],
+    [true, 5, "open-gatepass-ageing", "Open Gatepass Ageing", "Gatepass ageing", "farhana.teli@mosaicwellness.in", "gatepass query", "Open Gatepass Ageing Report", "", "OWNER_AGEING_TABLE"],
+    [true, 6, "open-putaway", "Open Putaway", "Putaway ageing", "farhana.teli@mosaicwellness.in", "putaway query", "Open Putaway Report", "", "PUTAWAY_TOTALS_TABLE"],
   ],
   "KPI Fields": [
     ["Active", "Report ID", "Display Order", "KPI Label", "Search Labels", "Value Position", "Tone", "Note Rule", "Note Value"],
     [true, "inventory-cycle-count", 1, "Last Quarter", "Last Quarter", "AFTER", "positive", "DATE_RANGE", "Last Quarter"],
     [true, "inward-tat", 1, "Last Quarter", "Last Quarter", "AFTER", "positive", "DATE_RANGE", "Last Quarter"],
+    [true, "inventory-adjustment", 1, "Total Events", "Total Events", "BEFORE_OR_AFTER", "", "FIXED", "Daily summary"],
     [true, "fefo-violations", 1, "Violated Batch Count", "Violated Batch Count", "BEFORE_OR_AFTER", "warning", "FIXED", "Latest reported value"],
   ],
 };
@@ -228,11 +280,12 @@ context.SpreadsheetApp = {
 };
 
 const runtime = context.readRuntimeConfiguration_();
-assert.equal(runtime.reports.length, 5);
+assert.equal(runtime.reports.length, 6);
 assert.equal(runtime.reports[0].metrics[0].label, "Last Quarter");
 assert.equal(runtime.reports[1].id, "inward-tat");
-assert.equal(runtime.reports[3].displayType, "OWNER_AGEING_TABLE");
-assert.equal(runtime.reports[4].displayType, "PUTAWAY_TOTALS_TABLE");
+assert.equal(runtime.reports[2].id, "inventory-adjustment");
+assert.equal(runtime.reports[4].displayType, "OWNER_AGEING_TABLE");
+assert.equal(runtime.reports[5].displayType, "PUTAWAY_TOTALS_TABLE");
 assert.match(context.buildConfigSignature_(runtime), /inward-tat/);
 assert.deepEqual(Array.from(runtime.allowedEmails), [
   "bhavesh.patel@mosaicwellness.in",
