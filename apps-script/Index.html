@@ -209,11 +209,15 @@
         justify-content: space-between; gap: 20px; padding: 16px 30px;
       }
       .source {
-        max-width: 390px; overflow: hidden; color: var(--muted);
+        margin: 0; color: var(--muted); overflow-wrap: anywhere;
         font: 11px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
-        text-overflow: ellipsis; white-space: nowrap;
       }
-      .actions { display: flex; gap: 10px; }
+      .source-block { min-width: 0; flex: 1; }
+      .source-time {
+        margin: 6px 0 0; color: #8a938f;
+        font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      .actions { display: flex; flex-shrink: 0; gap: 10px; }
       .button {
         min-height: 44px; display: inline-flex; align-items: center;
         justify-content: center; gap: 12px; padding: 0 17px;
@@ -413,9 +417,14 @@
                 </header>
                 ${renderReportBody(report)}
                 <footer class="report-foot">
-                  <p class="source" title="${escapeHtml(report.subject)}">
-                    Source · ${escapeHtml(report.sender)} · ${escapeHtml(report.subject)}
-                  </p>
+                  <div class="source-block">
+                    <p class="source">
+                      Source · ${escapeHtml(report.sender)} · ${escapeHtml(report.subject)}
+                    </p>
+                    <p class="source-time">
+                      Data pulled from email · ${escapeHtml(formatDateTime(report.receivedAt))}
+                    </p>
+                  </div>
                   <div class="actions">
                     ${linkButton(dashboardUrl, 'Open dashboard', 'primary')}
                     ${linkButton(emailUrl, 'Open email', 'secondary')}

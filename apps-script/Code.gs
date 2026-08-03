@@ -976,7 +976,7 @@ function parseBestConfiguredMetrics_(plainBody, htmlBody, metricConfigs) {
   const htmlMetrics = parseConfiguredMetrics_(htmlText, metricConfigs);
   const plainScore = countParsedMetricValues_(plainMetrics);
   const htmlScore = countParsedMetricValues_(htmlMetrics);
-  return htmlScore > plainScore ? htmlMetrics : plainMetrics;
+  return htmlScore >= plainScore ? htmlMetrics : plainMetrics;
 }
 
 function countParsedMetricValues_(metrics) {

@@ -145,12 +145,40 @@ const inventoryAdjustmentConfig = [
   noteValue,
 }));
 
-const inventory = context.parseConfiguredMetrics_(inventoryBody, [
+const currentInventoryPlain = `
+Inventory Accuracy Summary
+Last Quarter: 99.02%
+Qty: 41,83,737
+Last Month: 99.64%
+Qty: 25,78,577
+Month to Date: 84.72%
+Qty: 69,904
+Yesterday: 0%
+Qty: 0
+No cycle count was performed.
+`;
+
+const currentInventoryHtml = `
+<div>Last Quarter</div><div>99.02%</div><div>Qty: 41,83,737</div><div>01 Apr 2026 - 30 Jun 2026</div>
+<div>Last Month</div><div>99.64%</div><div>Qty: 25,78,577</div><div>01 Jul 2026 - 31 Jul 2026</div>
+<div>Month to Date</div><div>84.72%</div><div>Qty: 69,904</div><div>01 Aug 2026 - 03 Aug 2026</div>
+<div>Yesterday</div><div>0%</div><div>Qty: 0</div><div>02 Aug 2026 - 02 Aug 2026</div>
+<div>No cycle count was performed.</div>
+`;
+
+const inventoryConfig = [
   { label: "Last Quarter", searchLabels: ["Last Quarter"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Quarter" },
   { label: "Last Month", searchLabels: ["Last Month"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Last Month" },
   { label: "Month to Date", searchLabels: ["Month to Date", "MTD"], valuePosition: "AFTER", tone: "positive", noteRule: "DATE_RANGE", noteValue: "Month to Date" },
   { label: "Yesterday", searchLabels: ["Yesterday"], valuePosition: "AFTER", tone: "warning", noteRule: "NO_CYCLE_COUNT", noteValue: "Yesterday" },
-]);
+];
+
+const inventory = context.parseConfiguredMetrics_(inventoryBody, inventoryConfig);
+const currentInventory = context.parseBestConfiguredMetrics_(
+  currentInventoryPlain,
+  currentInventoryHtml,
+  inventoryConfig,
+);
 const fefo = context.parseConfiguredMetrics_(fefoBody, [
   { label: "Violated Batch Count", searchLabels: ["Violated Batch Count"], valuePosition: "BEFORE_OR_AFTER", tone: "warning", noteRule: "FIXED", noteValue: "Latest reported value" },
   { label: "Dispatch First Batch Count", searchLabels: ["Disaptch First Batch Count", "Dispatch First Batch Count"], valuePosition: "BEFORE_OR_AFTER", tone: "", noteRule: "FIXED", noteValue: "Latest reported value" },
@@ -182,6 +210,15 @@ const inventoryAdjustment = context.parseBestConfiguredMetrics_(
 assert.deepEqual(
   Array.from(inventory, (metric) => metric.value),
   ["99.02%", "98.6%", "99.56%", "0%"],
+);
+assert.deepEqual(
+  Array.from(currentInventory, (metric) => metric.note),
+  [
+    "01 Apr 2026 – 30 Jun 2026",
+    "01 Jul 2026 – 31 Jul 2026",
+    "01 Aug 2026 – 03 Aug 2026",
+    "No cycle count performed",
+  ],
 );
 assert.equal(
   context.isAutomatedOrForwardedReplySubject_(
