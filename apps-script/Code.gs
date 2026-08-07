@@ -485,6 +485,18 @@ function buildKpiEmailText_(data) {
           );
         });
     } else {
+      if (report.quantityCoverage) {
+        const coverage = report.quantityCoverage;
+        lines.push(`Overall Quantity Coverage: ${coverage.overall}`);
+        lines.push(`As of: ${coverage.asOf} | Cycle: ${coverage.cycle}`);
+        lines.push(
+          `Opening GOOD Qty: ${coverage.openingGoodQty} | ` +
+            `Cumulative Counted: ${coverage.cumulativeCounted} | ` +
+            `Counted Today: ${coverage.countedToday} | ` +
+            `Inventory Change: ${coverage.inventoryChange}`,
+        );
+        if (coverage.note) lines.push(coverage.note);
+      }
       report.metrics.forEach((metric) => {
         lines.push(`${metric.label}: ${metric.value}`);
       });
@@ -522,6 +534,10 @@ function buildKpiEmailHtml_(data, isTest) {
         reportBody = buildOwnerAgeingEmailTable_(report.table);
       } else if (report.displayType === 'PUTAWAY_TOTALS_TABLE') {
         reportBody = buildPutawayTotalsEmailTable_(report.table);
+      }
+      if (report.quantityCoverage) {
+        reportBody =
+          buildQuantityCoverageEmail_(report.quantityCoverage) + reportBody;
       }
       const dashboardButton = report.dashboardUrl
         ? `<a href="${escapeHtml_(report.dashboardUrl)}" style="display:inline-block;padding:10px 14px;border-radius:7px;background:#1e5c45;color:#fff;font-size:13px;font-weight:700;text-decoration:none">Open dashboard</a>`
@@ -594,6 +610,42 @@ function buildMetricEmailTable_(metrics) {
     })
     .join('');
   return `<table role="presentation" style="width:100%;border-collapse:collapse"><tr>${metricCells}</tr></table>`;
+}
+
+function buildQuantityCoverageEmail_(coverage) {
+  if (!coverage) return '';
+  const progress = Math.max(
+    0,
+    Math.min(100, Number(coverage.progressPercent) || 0),
+  );
+  const cards = [
+    ['Opening GOOD Qty', coverage.openingGoodQty, false],
+    ['Cumulative Counted', coverage.cumulativeCounted, false],
+    ['Counted Today', coverage.countedToday, false],
+    ['Inventory Change vs Previous Day', coverage.inventoryChange, true],
+  ];
+  const cardCells = cards
+    .map(([label, value, highlight]) => {
+      const background = highlight ? '#eff6ff' : '#3657ad';
+      const color = highlight ? '#1e3a8a' : '#ffffff';
+      const labelColor = highlight ? '#1e3a8a' : '#bfdbfe';
+      return `<td width="25%" valign="top" style="width:25%;padding:0 4px">
+        <div style="min-height:58px;padding:12px;border-radius:8px;background:${background};color:${color}">
+          <div style="color:${labelColor};font-size:9px;line-height:13px">${escapeHtml_(label)}</div>
+          <div style="margin-top:4px;font-size:16px;line-height:21px;font-weight:700">${escapeHtml_(value || '—')}</div>
+        </div>
+      </td>`;
+    })
+    .join('');
+
+  return `<div style="margin-bottom:16px;padding:20px;border-radius:12px;background:#233f8f;color:#fff">
+    <div style="color:#bfdbfe;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase">Overall Quantity Coverage</div>
+    <div style="margin-top:6px;font-size:32px;line-height:38px;font-weight:700">${escapeHtml_(coverage.overall)}</div>
+    <div style="margin-top:4px;color:#dbeafe;font-size:11px">As of ${escapeHtml_(coverage.asOf)} &nbsp;|&nbsp; Cycle ${escapeHtml_(coverage.cycle)}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-top:16px"><tr>${cardCells}</tr></table>
+    <div style="height:12px;margin-top:16px;background:#4564b7"><div style="width:${progress}%;height:12px;background:#22d3ee"></div></div>
+    ${coverage.note ? `<div style="margin-top:9px;color:#dbeafe;font-size:10px">${escapeHtml_(coverage.note)}</div>` : ''}
+  </div>`;
 }
 
 function buildOwnerAgeingEmailTable_(table) {
@@ -727,6 +779,7 @@ function buildReport_(config, timeZone) {
       displayType: config.displayType,
       metrics: emptyConfiguredMetrics_(config.metrics),
       table: null,
+      quantityCoverage: null,
       dashboardUrl: config.dashboardUrlFallback,
       emailUrl: '',
     };
@@ -734,6 +787,10 @@ function buildReport_(config, timeZone) {
 
   const plainBody = normalizeText_(message.getPlainBody());
   const htmlBody = message.getBody();
+  const quantityCoverage =
+    config.id === 'inventory-cycle-count'
+      ? parseQuantityCoverage_(plainBody, htmlBody)
+      : null;
   const isOwnerAgeingTable = config.displayType === 'OWNER_AGEING_TABLE';
   const isPutawayTotalsTable =
     config.displayType === 'PUTAWAY_TOTALS_TABLE';
@@ -769,6 +826,7 @@ function buildReport_(config, timeZone) {
     displayType: config.displayType,
     metrics,
     table,
+    quantityCoverage,
     dashboardUrl:
       extractDashboardUrl_(htmlBody, plainBody) ||
       config.dashboardUrlFallback,
@@ -966,6 +1024,49 @@ function parseConfiguredMetrics_(text, metricConfigs) {
 
     return metric_(config.label, value, note, config.tone);
   });
+}
+
+function parseQuantityCoverage_(plainBody, htmlBody) {
+  const text = normalizeText_(
+    `${plainBody || ''}\n${htmlToStructuredText_(htmlBody)}`,
+  );
+  if (!includesIgnoreCase_(text, 'Overall Quantity Coverage')) return null;
+
+  const valueFor = (label) => {
+    const escaped = String(label).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = text.match(
+      new RegExp(`(?:^|\\n)\\s*${escaped}\\s*:\\s*([^\\n]+)`, 'i'),
+    );
+    return match ? match[1].trim() : '';
+  };
+  const overall = valueFor('Overall coverage');
+  if (!overall) return null;
+
+  const changeWithUnits = valueFor('Inventory Change');
+  const changeMatch = changeWithUnits.match(/[+-]?[\d,.]+%/);
+  const movementMatch = text.match(
+    /(?:No material inventory movement detected|Material inventory movement detected)[^.\n]*\.?/i,
+  );
+  const thresholdMatch = text.match(/Daily threshold:\s*[^.\n]+\.?/i);
+  const numericCoverage = Number(overall.replace(/[^\d.-]/g, ''));
+
+  return {
+    overall,
+    asOf: valueFor('As of'),
+    cycle: valueFor('Cycle'),
+    openingGoodQty: valueFor('Opening GOOD Qty'),
+    cumulativeCounted: valueFor('Cumulative Counted'),
+    countedToday: valueFor('Counted Today'),
+    inventoryChange: changeMatch ? changeMatch[0] : changeWithUnits,
+    inventoryChangeDetail: changeWithUnits,
+    progressPercent: Number.isFinite(numericCoverage)
+      ? Math.max(0, Math.min(100, numericCoverage))
+      : 0,
+    note: [
+      movementMatch ? movementMatch[0].trim() : '',
+      thresholdMatch ? thresholdMatch[0].trim() : '',
+    ].filter(Boolean).join(' '),
+  };
 }
 
 function parseBestConfiguredMetrics_(plainBody, htmlBody, metricConfigs) {

@@ -178,6 +178,34 @@
         min-height: 30px; color: #8a938f;
         font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
       }
+      .coverage-panel {
+        padding: 24px 30px; border-top: 1px solid var(--line);
+        background: #233f8f; color: white;
+      }
+      .coverage-label {
+        margin: 0; color: #bfdbfe; font-size: 12px; font-weight: 800;
+        letter-spacing: 1.4px; text-transform: uppercase;
+      }
+      .coverage-value {
+        display: block; margin-top: 7px; font-size: clamp(32px, 4vw, 46px);
+        font-weight: 750; letter-spacing: -.04em;
+      }
+      .coverage-period { margin: 5px 0 0; color: #dbeafe; font-size: 13px; }
+      .coverage-details {
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px; margin-top: 18px;
+      }
+      .coverage-card { padding: 14px 15px; border-radius: 10px; background: #3657ad; }
+      .coverage-card.change { background: #eff6ff; color: #1e3a8a; }
+      .coverage-card span { display: block; color: #bfdbfe; font-size: 10px; }
+      .coverage-card.change span { color: #1e3a8a; }
+      .coverage-card strong { display: block; margin-top: 5px; font-size: 18px; }
+      .coverage-track {
+        height: 12px; margin-top: 18px; overflow: hidden;
+        border-radius: 2px; background: #4564b7;
+      }
+      .coverage-bar { height: 100%; background: #22d3ee; }
+      .coverage-note { margin: 9px 0 0; color: #dbeafe; font-size: 10px; }
       .ageing-section { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
       .ageing-title { margin: 0; padding: 18px 24px; font-size: 15px; font-weight: 750; }
       .ageing-scroll { overflow-x: auto; }
@@ -251,6 +279,7 @@
         .metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
         .metric:nth-child(3) { border-left: 0; }
         .metric:nth-child(n+3) { border-top: 1px solid var(--line); }
+        .coverage-details { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
       @media (max-width: 650px) {
         .shell { width: min(100% - 28px, 1220px); }
@@ -271,6 +300,8 @@
         .metric-grid { grid-template-columns: 1fr; }
         .metric { min-height: 136px; }
         .metric + .metric { border-top: 1px solid var(--line); border-left: 0; }
+        .coverage-panel { padding: 22px; }
+        .coverage-details { grid-template-columns: 1fr; }
         .actions { width: 100%; flex-direction: column; }
         .button { width: 100%; }
         .footer { align-items: flex-start; flex-direction: column; justify-content: center; gap: 10px; }
@@ -485,7 +516,7 @@
         if (report.displayType === 'PUTAWAY_TOTALS_TABLE') {
           return renderPutawayTotalsTable(report.table);
         }
-        return `<div class="metric-grid">
+        return `${renderQuantityCoverage(report.quantityCoverage)}<div class="metric-grid">
           ${(report.metrics || []).map((metric) => `
             <div class="metric">
               <p>${escapeHtml(metric.label)}</p>
@@ -494,6 +525,38 @@
             </div>
           `).join('')}
         </div>`;
+      }
+
+      function renderQuantityCoverage(coverage) {
+        if (!coverage) return '';
+        const progress = Math.max(0, Math.min(100, Number(coverage.progressPercent) || 0));
+        const period = [
+          coverage.asOf ? `As of ${escapeHtml(coverage.asOf)}` : '',
+          coverage.cycle ? `Cycle ${escapeHtml(coverage.cycle)}` : '',
+        ].filter(Boolean).join(' · ');
+        const cards = [
+          ['Opening GOOD Qty', coverage.openingGoodQty, ''],
+          ['Cumulative Counted', coverage.cumulativeCounted, ''],
+          ['Counted Today', coverage.countedToday, ''],
+          ['Inventory Change vs Previous Day', coverage.inventoryChange, 'change'],
+        ];
+        return `<section class="coverage-panel">
+          <p class="coverage-label">Overall Quantity Coverage</p>
+          <strong class="coverage-value">${escapeHtml(coverage.overall)}</strong>
+          <p class="coverage-period">${period}</p>
+          <div class="coverage-details">
+            ${cards.map(([label, value, className]) => `
+              <div class="coverage-card ${className}">
+                <span>${escapeHtml(label)}</span>
+                <strong>${escapeHtml(value || '—')}</strong>
+              </div>
+            `).join('')}
+          </div>
+          <div class="coverage-track" role="progressbar" aria-label="Overall quantity coverage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}">
+            <div class="coverage-bar" style="width:${progress}%"></div>
+          </div>
+          ${coverage.note ? `<p class="coverage-note">${escapeHtml(coverage.note)}</p>` : ''}
+        </section>`;
       }
 
       function renderOwnerAgeingTable(table) {

@@ -146,6 +146,15 @@ const inventoryAdjustmentConfig = [
 }));
 
 const currentInventoryPlain = `
+Overall Quantity Coverage
+Cycle: 01 Jul 2026 - 30 Sep 2026
+As of: 07 Aug 2026
+Overall coverage: 70.01%
+Opening GOOD Qty: 41,06,079
+Cumulative Counted: 28,74,644
+Counted Today: 0
+Inventory Change: +0.21% (8,760 units)
+No material inventory movement detected.
 Inventory Accuracy Summary
 Last Quarter: 99.02%
 Qty: 41,83,737
@@ -178,6 +187,10 @@ const currentInventory = context.parseBestConfiguredMetrics_(
   currentInventoryPlain,
   currentInventoryHtml,
   inventoryConfig,
+);
+const quantityCoverage = context.parseQuantityCoverage_(
+  currentInventoryPlain,
+  '<div>Daily threshold: +/-5%.</div>',
 );
 const fefo = context.parseConfiguredMetrics_(fefoBody, [
   { label: "Violated Batch Count", searchLabels: ["Violated Batch Count"], valuePosition: "BEFORE_OR_AFTER", tone: "warning", noteRule: "FIXED", noteValue: "Latest reported value" },
@@ -219,6 +232,16 @@ assert.deepEqual(
     "01 Aug 2026 – 03 Aug 2026",
     "No cycle count performed",
   ],
+);
+assert.equal(quantityCoverage.overall, "70.01%");
+assert.equal(quantityCoverage.openingGoodQty, "41,06,079");
+assert.equal(quantityCoverage.cumulativeCounted, "28,74,644");
+assert.equal(quantityCoverage.countedToday, "0");
+assert.equal(quantityCoverage.inventoryChange, "+0.21%");
+assert.equal(quantityCoverage.progressPercent, 70.01);
+assert.equal(
+  quantityCoverage.note,
+  "No material inventory movement detected. Daily threshold: +/-5%.",
 );
 assert.equal(
   context.isAutomatedOrForwardedReplySubject_(
