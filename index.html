@@ -1,18 +1,384 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="refresh" content="0; url=./docs/" />
-    <title>Operations KPI Command Center</title>
-    <script>
-      window.location.replace("./docs/");
-    </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="theme-color" content="#173f32">
+    <title>Operations Dashboard Portal | Mosaic Wellness</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23173f32'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial,sans-serif' font-size='21' font-weight='700' fill='white'%3EMW%3C/text%3E%3C/svg%3E">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+      :root {
+        --ink: #14211c;
+        --muted: #68736e;
+        --green: #1e5c45;
+        --green-dark: #173f32;
+        --paper: #f4f1e9;
+        --card: #fffdf8;
+        --line: #dcd8ce;
+        --lime: #dfff7a;
+        --blue: #233f8f;
+        --danger: #c94f3a;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0; overflow: hidden; color: var(--ink); background: var(--paper);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      button, a { font: inherit; }
+      .portal { min-height: 100%; display: grid; grid-template-columns: 286px minmax(0, 1fr); }
+      .sidebar {
+        min-height: 100vh; display: flex; flex-direction: column; padding: 24px 18px;
+        border-right: 1px solid rgba(255,255,255,.12); background: var(--green-dark); color: white;
+      }
+      .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 25px; }
+      .mark {
+        width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto;
+        border: 1px solid rgba(255,255,255,.34); border-radius: 12px; background: rgba(255,255,255,.08);
+        color: var(--lime); font-size: 12px; font-weight: 800; letter-spacing: .08em;
+      }
+      .brand p { margin: 0; }
+      .brand-kicker { color: #b9d5ca; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      .brand-name { margin-top: 3px !important; font-size: 15px; font-weight: 750; }
+      .nav-label {
+        margin: 8px 10px 10px; color: #9fc2b5; font-size: 10px; font-weight: 800;
+        letter-spacing: .15em; text-transform: uppercase;
+      }
+      .dashboard-nav { display: grid; gap: 7px; }
+      .dashboard-button {
+        width: 100%; display: grid; grid-template-columns: 34px minmax(0,1fr) 16px;
+        align-items: center; gap: 10px; padding: 11px; border: 1px solid transparent;
+        border-radius: 11px; background: transparent; color: #dcebe5; text-align: left; cursor: pointer;
+        transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+      }
+      .dashboard-button:hover { background: rgba(255,255,255,.08); transform: translateX(2px); }
+      .dashboard-button.active {
+        border-color: rgba(223,255,122,.35); background: rgba(223,255,122,.13); color: white;
+      }
+      .nav-icon {
+        width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px;
+        background: rgba(255,255,255,.1); color: var(--lime); font-size: 11px; font-weight: 800;
+      }
+      .dashboard-button strong { display: block; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+      .dashboard-button small { display: block; margin-top: 3px; color: #9fc2b5; font-size: 10px; }
+      .arrow { color: #9fc2b5; }
+      .sidebar-foot { margin-top: auto; padding: 18px 9px 2px; border-top: 1px solid rgba(255,255,255,.12); }
+      .security-line { display: flex; align-items: center; gap: 8px; color: #b9d5ca; font-size: 10px; line-height: 1.45; }
+      .security-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px rgba(223,255,122,.1); }
+      .workspace { min-width: 0; min-height: 100vh; display: grid; grid-template-rows: 72px minmax(0, 1fr); }
+      .topbar {
+        min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 18px;
+        padding: 0 24px; border-bottom: 1px solid var(--line); background: rgba(255,253,248,.94);
+      }
+      .current-title { min-width: 0; }
+      .current-title p { margin: 0; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+      .current-title h1 { margin: 4px 0 0; overflow: hidden; font-size: 19px; text-overflow: ellipsis; white-space: nowrap; }
+      .toolbar { display: flex; align-items: center; gap: 9px; }
+      .account {
+        max-width: 260px; overflow: hidden; padding: 8px 11px; border-radius: 999px;
+        background: #e6f2eb; color: var(--green); font-size: 11px; font-weight: 750;
+        text-overflow: ellipsis; white-space: nowrap;
+      }
+      .toolbar-button {
+        min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 9px;
+        background: white; color: var(--ink); font-size: 11px; font-weight: 750; text-decoration: none; cursor: pointer;
+      }
+      .toolbar-button:hover { border-color: var(--green); color: var(--green); }
+      .viewer { position: relative; min-width: 0; min-height: 0; background: #e9ecea; }
+      .dashboard-frame { width: 100%; height: 100%; display: block; border: 0; background: white; }
+      .frame-loader {
+        position: absolute; inset: 0; display: none; place-items: center; z-index: 3;
+        background: rgba(244,241,233,.92); color: var(--muted); font-size: 12px;
+      }
+      .frame-loader.show { display: grid; }
+      .verification {
+        position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 24px;
+        background:
+          radial-gradient(circle at 80% 10%, rgba(223,255,122,.26), transparent 28rem),
+          var(--paper);
+      }
+      .verification[hidden] { display: none; }
+      .verify-card {
+        width: min(100%, 520px); padding: 38px; border: 1px solid var(--line); border-radius: 22px;
+        background: var(--card); box-shadow: 0 24px 70px rgba(31,52,42,.12); text-align: center;
+      }
+      .verify-icon {
+        width: 58px; height: 58px; display: grid; place-items: center; margin: 0 auto 20px;
+        border-radius: 17px; background: var(--blue); color: white; font-size: 15px; font-weight: 850;
+      }
+      .verify-card .eyebrow { margin: 0; color: var(--green); font-size: 10px; font-weight: 850; letter-spacing: .15em; text-transform: uppercase; }
+      .verify-card h2 { margin: 9px 0 0; font-size: 29px; letter-spacing: -.035em; }
+      .verify-copy { margin: 13px auto 0; max-width: 410px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+      .verify-button {
+        min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+        margin-top: 24px; padding: 0 20px; border: 0; border-radius: 10px;
+        background: var(--green); color: white; font-size: 13px; font-weight: 800; cursor: pointer;
+      }
+      .verify-button:disabled { cursor: wait; opacity: .65; }
+      .google-g { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; background: white; color: #4285f4; font-weight: 900; }
+      .verify-status { min-height: 18px; margin: 15px 0 0; color: var(--muted); font-size: 11px; }
+      .verify-status.error { color: var(--danger); }
+      @media (max-width: 780px) {
+        body { overflow: auto; }
+        .portal { min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: auto minmax(720px, 1fr); }
+        .sidebar { min-height: auto; padding: 14px; border-right: 0; }
+        .brand { padding: 0 4px 13px; }
+        .dashboard-nav { display: flex; overflow-x: auto; padding-bottom: 4px; }
+        .dashboard-button { min-width: 205px; }
+        .nav-label, .sidebar-foot { display: none; }
+        .workspace { min-height: 720px; grid-template-rows: 68px minmax(0,1fr); }
+        .topbar { padding: 0 14px; }
+        .account { display: none; }
+        .verify-card { padding: 28px 22px; }
+      }
+    </style>
   </head>
   <body>
-    <p>
-      Opening the
-      <a href="./docs/">Operations KPI Command Center</a>…
-    </p>
+    <main class="portal">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">MW</div>
+          <div>
+            <p class="brand-kicker">Mosaic Wellness</p>
+            <p class="brand-name">Operations Portal</p>
+          </div>
+        </div>
+        <p class="nav-label">Dashboards</p>
+        <nav class="dashboard-nav" id="dashboard-nav" aria-label="Operations dashboards"></nav>
+        <div class="sidebar-foot">
+          <div class="security-line"><span class="security-dot"></span><span>Restricted Google Workspace access</span></div>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div class="current-title">
+            <p>Selected dashboard</p>
+            <h1 id="current-dashboard">Inventory Visibility</h1>
+          </div>
+          <div class="toolbar">
+            <span class="account" id="account" hidden></span>
+            <a class="toolbar-button" id="open-new" href="#" target="_blank" rel="noopener noreferrer" hidden>Open in new tab ↗</a>
+            <button class="toolbar-button" id="switch-account" type="button" hidden>Switch account</button>
+          </div>
+        </header>
+
+        <div class="viewer">
+          <div class="verification" id="verification">
+            <div class="verify-card">
+              <div class="verify-icon">MW</div>
+              <p class="eyebrow">Google verification</p>
+              <h2>Verify to open dashboards</h2>
+              <p class="verify-copy">Sign in with an approved Mosaic Wellness Google account. After verification, the selected dashboard will load in this panel.</p>
+              <button class="verify-button" id="verify-button" type="button">
+                <span class="google-g">G</span><span>Continue with Google</span>
+              </button>
+              <p class="verify-status" id="verify-status">Your Google token stays in this browser session.</p>
+            </div>
+          </div>
+          <div class="frame-loader" id="frame-loader">Loading dashboard…</div>
+          <iframe class="dashboard-frame" id="dashboard-frame" title="Operations dashboard" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const DASHBOARDS = [
+        {
+          id: 'inventory-visibility',
+          short: 'IV',
+          name: 'Inventory Visibility',
+          detail: 'Cycle count health',
+          url: 'https://bjpatel90.github.io/Inventory_Visibility/',
+        },
+        {
+          id: 'inventory-adjustment',
+          short: 'IA',
+          name: 'Inventory Adjustment',
+          detail: 'Daily adjustments',
+          url: 'https://bjpatel90.github.io/inventory-adjustment-dashboard/',
+        },
+        {
+          id: 'inward-tat',
+          short: 'IT',
+          name: 'Inward TAT',
+          detail: 'Inbound operations',
+          url: 'https://bjpatel90.github.io/Inward-TAT/',
+        },
+      ];
+      const GOOGLE_OAUTH_CLIENT_ID =
+        '1021762366002-vo41asis58ss3qtt5j8tnkloujf1t73f.apps.googleusercontent.com';
+      const APPS_SCRIPT_DEPLOYMENT_ID =
+        'AKfycbziahyxFrsJjwlcsxMols1-VNvW1GgzVTdbxIhZF5dttLBI5QLZ92j-uGPE93a2P34b';
+      const GOOGLE_OAUTH_SCOPES = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/script.scriptapp',
+        'https://www.googleapis.com/auth/script.send_mail',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ].join(' ');
+
+      const navEl = document.getElementById('dashboard-nav');
+      const titleEl = document.getElementById('current-dashboard');
+      const verificationEl = document.getElementById('verification');
+      const verifyButton = document.getElementById('verify-button');
+      const verifyStatus = document.getElementById('verify-status');
+      const frame = document.getElementById('dashboard-frame');
+      const frameLoader = document.getElementById('frame-loader');
+      const accountEl = document.getElementById('account');
+      const switchButton = document.getElementById('switch-account');
+      const openNew = document.getElementById('open-new');
+      let selectedId = DASHBOARDS.some((item) => item.id === location.hash.slice(1))
+        ? location.hash.slice(1)
+        : DASHBOARDS[0].id;
+      let googleTokenClient = null;
+      let googleAccessToken = '';
+      let isVerified = false;
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function selectedDashboard() {
+        return DASHBOARDS.find((item) => item.id === selectedId) || DASHBOARDS[0];
+      }
+
+      function renderNavigation() {
+        navEl.innerHTML = DASHBOARDS.map((item) => `
+          <button class="dashboard-button${item.id === selectedId ? ' active' : ''}" type="button" data-dashboard="${escapeHtml(item.id)}">
+            <span class="nav-icon">${escapeHtml(item.short)}</span>
+            <span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.detail)}</small></span>
+            <span class="arrow">›</span>
+          </button>
+        `).join('');
+        navEl.querySelectorAll('[data-dashboard]').forEach((button) => {
+          button.addEventListener('click', () => selectDashboard(button.dataset.dashboard));
+        });
+      }
+
+      function selectDashboard(id) {
+        if (!DASHBOARDS.some((item) => item.id === id)) return;
+        selectedId = id;
+        history.replaceState(null, '', `#${id}`);
+        const dashboard = selectedDashboard();
+        titleEl.textContent = dashboard.name;
+        openNew.href = dashboard.url;
+        renderNavigation();
+        if (isVerified) loadSelectedDashboard();
+      }
+
+      function loadSelectedDashboard() {
+        const dashboard = selectedDashboard();
+        verificationEl.hidden = true;
+        openNew.hidden = false;
+        frameLoader.classList.add('show');
+        frame.title = dashboard.name;
+        frame.src = dashboard.url;
+      }
+
+      function setVerificationMessage(message, isError = false) {
+        verifyStatus.textContent = message;
+        verifyStatus.classList.toggle('error', isError);
+      }
+
+      async function runAppsScriptFunction(functionName) {
+        const response = await fetch(
+          `https://script.googleapis.com/v1/scripts/${APPS_SCRIPT_DEPLOYMENT_ID}:run`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${googleAccessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ function: functionName, parameters: [], devMode: false }),
+          },
+        );
+        const payload = await response.json();
+        if (!response.ok || payload.error) {
+          const detail = payload?.error?.details?.[0]?.errorMessage;
+          const error = new Error(detail || payload?.error?.message || 'Google verification failed.');
+          error.status = response.status;
+          throw error;
+        }
+        return payload?.response?.result;
+      }
+
+      async function verifyApprovedUser(tokenResponse) {
+        googleAccessToken = tokenResponse.access_token;
+        setVerificationMessage('Checking approved dashboard access…');
+        try {
+          const result = await runAppsScriptFunction('getSharedDashboardData');
+          isVerified = true;
+          accountEl.textContent = result?.viewerEmail || 'Google verified';
+          accountEl.hidden = false;
+          switchButton.hidden = false;
+          verifyButton.disabled = false;
+          loadSelectedDashboard();
+        } catch (error) {
+          googleAccessToken = '';
+          isVerified = false;
+          verifyButton.disabled = false;
+          setVerificationMessage(error.message, true);
+        }
+      }
+
+      function initializeGoogleOAuth() {
+        if (!window.google?.accounts?.oauth2) {
+          setVerificationMessage('Google sign-in could not load. Refresh and try again.', true);
+          return;
+        }
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_OAUTH_CLIENT_ID,
+          scope: GOOGLE_OAUTH_SCOPES,
+          callback: (tokenResponse) => {
+            if (tokenResponse.error) {
+              verifyButton.disabled = false;
+              setVerificationMessage(tokenResponse.error_description || tokenResponse.error, true);
+              return;
+            }
+            verifyApprovedUser(tokenResponse);
+          },
+          error_callback: (error) => {
+            verifyButton.disabled = false;
+            setVerificationMessage(error?.message || 'Google sign-in was cancelled.', true);
+          },
+        });
+      }
+
+      function requestGoogleAccess() {
+        if (!googleTokenClient) initializeGoogleOAuth();
+        if (!googleTokenClient) return;
+        verifyButton.disabled = true;
+        setVerificationMessage('Opening Google verification…');
+        googleTokenClient.requestAccessToken({
+          prompt: googleAccessToken ? 'select_account' : 'consent',
+        });
+      }
+
+      function switchAccount() {
+        isVerified = false;
+        frame.removeAttribute('src');
+        verificationEl.hidden = false;
+        accountEl.hidden = true;
+        switchButton.hidden = true;
+        openNew.hidden = true;
+        requestGoogleAccess();
+      }
+
+      frame.addEventListener('load', () => frameLoader.classList.remove('show'));
+      verifyButton.addEventListener('click', requestGoogleAccess);
+      switchButton.addEventListener('click', switchAccount);
+      window.addEventListener('hashchange', () => selectDashboard(location.hash.slice(1)));
+      window.addEventListener('load', initializeGoogleOAuth);
+      renderNavigation();
+      selectDashboard(selectedId);
+    </script>
   </body>
 </html>
