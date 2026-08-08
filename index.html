@@ -160,7 +160,6 @@
           </div>
           <div class="toolbar">
             <span class="account" id="account" hidden></span>
-            <button class="toolbar-button" id="refresh-dashboard" type="button" hidden>Refresh data</button>
             <a class="toolbar-button" id="open-new" href="#" target="_blank" rel="noopener noreferrer" hidden>Open in new tab ↗</a>
             <button class="toolbar-button" id="switch-account" type="button" hidden>Switch account</button>
           </div>
@@ -213,13 +212,6 @@
         '1021762366002-vo41asis58ss3qtt5j8tnkloujf1t73f.apps.googleusercontent.com';
       const APPS_SCRIPT_DEPLOYMENT_ID =
         'AKfycbziahyxFrsJjwlcsxMols1-VNvW1GgzVTdbxIhZF5dttLBI5QLZ92j-uGPE93a2P34b';
-      const INVENTORY_DATA_URL =
-        'https://script.google.com/macros/s/AKfycbzb3RLplMSuW6BcKVCo7HG4Jbd62qEkRF0gjMCjSrpn7F15iZKbqRSD9u_YKjEIa9HFNQ/exec';
-      const INVENTORY_SNAPSHOT_KEYS = [
-        'inventory-dashboard-snapshot-v1',
-        'inventory-config-snapshot-v1',
-        'inventory-cycle-coverage-v2',
-      ];
       const GOOGLE_OAUTH_SCOPES = [
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/spreadsheets',
@@ -238,7 +230,6 @@
       const accountEl = document.getElementById('account');
       const switchButton = document.getElementById('switch-account');
       const openNew = document.getElementById('open-new');
-      const refreshButton = document.getElementById('refresh-dashboard');
       let selectedId = DASHBOARDS.some((item) => item.id === location.hash.slice(1))
         ? location.hash.slice(1)
         : DASHBOARDS[0].id;
@@ -287,46 +278,9 @@
         const dashboard = selectedDashboard();
         verificationEl.hidden = true;
         openNew.hidden = false;
-        refreshButton.hidden = false;
         frameLoader.classList.add('show');
         frame.title = dashboard.name;
-        if (dashboard.id === 'inventory-visibility') {
-          INVENTORY_SNAPSHOT_KEYS.forEach((key) => localStorage.removeItem(key));
-        }
-        const dashboardUrl = new URL(dashboard.url);
-        dashboardUrl.searchParams.set('portalRefresh', String(Date.now()));
-        frame.src = dashboardUrl.toString();
-      }
-
-      async function refreshSelectedDashboard() {
-        if (!isVerified || refreshButton.disabled) return;
-
-        const dashboard = selectedDashboard();
-        const originalLabel = refreshButton.textContent;
-        refreshButton.disabled = true;
-        refreshButton.textContent = 'Refreshing…';
-        frameLoader.classList.add('show');
-
-        try {
-          if (dashboard.id === 'inventory-visibility') {
-            INVENTORY_SNAPSHOT_KEYS.forEach((key) => localStorage.removeItem(key));
-            const refreshUrl = new URL(INVENTORY_DATA_URL);
-            refreshUrl.searchParams.set('action', 'refreshDashboard');
-            refreshUrl.searchParams.set('_', String(Date.now()));
-            const response = await fetch(refreshUrl.toString(), {
-              cache: 'no-store',
-              redirect: 'follow',
-            });
-            if (!response.ok) throw new Error(`Refresh failed (${response.status})`);
-          }
-          loadSelectedDashboard();
-        } catch (error) {
-          frameLoader.classList.remove('show');
-          window.alert(`The latest data could not be requested. ${error.message}`);
-        } finally {
-          refreshButton.disabled = false;
-          refreshButton.textContent = originalLabel;
-        }
+        frame.src = dashboard.url;
       }
 
       function setVerificationMessage(message, isError = false) {
@@ -415,13 +369,11 @@
         accountEl.hidden = true;
         switchButton.hidden = true;
         openNew.hidden = true;
-        refreshButton.hidden = true;
         requestGoogleAccess();
       }
 
       frame.addEventListener('load', () => frameLoader.classList.remove('show'));
       verifyButton.addEventListener('click', requestGoogleAccess);
-      refreshButton.addEventListener('click', refreshSelectedDashboard);
       switchButton.addEventListener('click', switchAccount);
       window.addEventListener('hashchange', () => selectDashboard(location.hash.slice(1)));
       window.addEventListener('load', initializeGoogleOAuth);
