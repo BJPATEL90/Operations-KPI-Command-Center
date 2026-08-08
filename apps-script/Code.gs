@@ -595,8 +595,11 @@ function sourceFetchedLabel_(report, timeZone) {
 }
 
 function buildMetricEmailTable_(metrics) {
-  const metricCells = metrics
-    .map((metric) => {
+  const metricRows = [];
+  for (let start = 0; start < metrics.length; start += 4) {
+    const rowMetrics = metrics.slice(start, start + 4);
+    const metricCells = rowMetrics
+      .map((metric) => {
       const color =
         metric.tone === 'warning'
           ? '#d95c43'
@@ -606,10 +609,17 @@ function buildMetricEmailTable_(metrics) {
       return `<td style="width:25%;padding:12px;border:1px solid #dcd8ce;vertical-align:top">
         <div style="min-height:30px;color:#68736e;font-size:11px;line-height:1.3">${escapeHtml_(metric.label)}</div>
         <strong style="display:block;margin-top:8px;color:${color};font-size:23px">${escapeHtml_(metric.value)}</strong>
+        <div style="min-height:15px;margin-top:7px;color:#8a938f;font-size:9px;line-height:1.35">${escapeHtml_(metric.note)}</div>
       </td>`;
-    })
-    .join('');
-  return `<table role="presentation" style="width:100%;border-collapse:collapse"><tr>${metricCells}</tr></table>`;
+      })
+      .join('');
+    const emptyCells = Array.from(
+      { length: 4 - rowMetrics.length },
+      () => '<td style="width:25%"></td>',
+    ).join('');
+    metricRows.push(`<tr>${metricCells}${emptyCells}</tr>`);
+  }
+  return `<table role="presentation" style="width:100%;table-layout:fixed;border-collapse:collapse">${metricRows.join('')}</table>`;
 }
 
 function buildQuantityCoverageEmail_(coverage) {
@@ -890,7 +900,7 @@ function parseOwnerAgeingTable_(text) {
   const rowPattern =
     /^(\d+)\s+(.+?)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)$/;
   const totalPattern =
-    /^GRAND TOTAL\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)$/i;
+    /^GRAND TOTAL\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)(?:\s*[^\d,\s].*)?$/i;
 
   lines.forEach((line) => {
     const totalMatch = line.match(totalPattern);

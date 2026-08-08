@@ -48,8 +48,7 @@ Open Qty GP Count Open Qty GP Count Open Qty GP Count Qty Total Count Total
 2 Shraddha 3,20,782 178 4,737 32 2,889 48 3,28,408 258
 3 Suraj Gupta 3,18,621 152 697 12 1,868 12 3,21,186 176
 4 Unknown 2,619 4 0 1 0 1 2,619 6
-GRAND TOTAL 8,34,636 533 12,301 96 18,195 118 8,65,132 747
-Critical Ageing Alert — Beyond Threshold
+GRAND TOTAL 8,34,636 533 12,301 96 18,195 118 8,65,132 747⚠️ Critical Ageing Alert — Beyond Threshold
 `;
 
 const putawayBody = `
@@ -243,6 +242,18 @@ assert.equal(
   quantityCoverage.note,
   "No material inventory movement detected. Daily threshold: +/-5%.",
 );
+const metricEmailHtml = context.buildMetricEmailTable_(currentInventory);
+assert.match(metricEmailHtml, /01 Apr 2026/);
+assert.match(metricEmailHtml, /No cycle count performed/);
+const adjustmentEmailHtml = context.buildMetricEmailTable_(
+  Array.from({ length: 12 }, (_, index) => ({
+    label: `Metric ${index + 1}`,
+    value: String(index + 1),
+    note: index < 8 ? "Daily summary" : "Month-to-date summary",
+    tone: "",
+  })),
+);
+assert.equal((adjustmentEmailHtml.match(/<tr>/g) || []).length, 3);
 assert.equal(
   context.isAutomatedOrForwardedReplySubject_(
     "Out-of-Office Re: Daily Cycle count inventory Healh report - 29 Jul 2026",
